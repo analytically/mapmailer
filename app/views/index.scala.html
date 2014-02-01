@@ -1,0 +1,66 @@
+@main("MapMailer") {
+<script type="text/javascript" language="javascript" src="//code.jquery.com/jquery.js"></script>
+<script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+<script type="text/javascript" language="javascript" src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
+<script type="text/javascript">
+    function init() {
+        var map = new L.Map('map').setView([53, -2], 7);
+
+        // Initialise the FeatureGroup to store editable layers
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        // Initialise the draw control and pass it the FeatureGroup of editable layers
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polyline: false,
+                polygon: {
+                    showArea: true,
+                    allowIntersection: false,
+                    drawError: {
+                        color: '#e1e100',
+                        message: '<strong>Nein!<strong> You can\'t draw an intersecting polygon.'
+                    },
+                    shapeOptions: {
+                        color: '#a94442'
+                    },
+                    metric: false
+                },
+                rectangle: false,
+                circle: false,
+                marker: false
+            },
+            edit: {
+                featureGroup: drawnItems
+            }
+        });
+        map.addControl(drawControl);
+
+        // add an OpenStreetMap tile layer
+        L.tileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        map.on('draw:created', function (e) {
+            var type = e.layerType,
+                    layer = e.layer;
+
+            if (type === 'polygon') {
+                console.log(layer.toGeoJSON());
+
+                layer.bindPopup('Found 34 contacts. <button type="button" class="btn btn-primary">Email</button>');
+            }
+
+            drawnItems.addLayer(layer);
+        });
+
+        new L.Control.Scale({maxWidth: 1200, metric: false}).addTo(map);
+        new L.Control.Scale({maxWidth: 600, metric: false}).addTo(map);
+        new L.Control.Scale({maxWidth: 300, metric: false}).addTo(map);
+    }
+</script>
+<body onLoad="javascript:init();">
+<div id="map"></div>
+</body>
+}
