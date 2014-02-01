@@ -13,6 +13,8 @@ Todo:
 
 Follow [@analytically](http://twitter.com/analytically) for updates.
 
+![screenshot](screenshot.png)
+
 ### Requirements
 
 - Java 6 or later
@@ -21,7 +23,7 @@ Follow [@analytically](http://twitter.com/analytically) for updates.
 
 ### Setup
 
-Edit `conf/application.conf` and point it to a MongoDB installation (defaults to `localhost:27017`), and execute
+Edit `conf/application.conf` and point it to a MongoDB installation (defaults to `localhost:27017`), add CRM details, and execute
 
 ``` sh
 play run
@@ -33,10 +35,6 @@ files in the `codepointopen` directory.
 After each file is imported, it will be moved to the `codepointopen/done` directory.
 
 Then visit [http://localhost:9000](http://localhost:9000) and you should see the welcome screen.
-
-### Screenshots
-
-![screenshot](screenshot.png)
 
 ### Background and usecase
 
