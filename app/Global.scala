@@ -15,7 +15,7 @@ import reactivemongo.api.indexes.IndexType.{Geo2D, Ascending}
 import reactivemongo.api.indexes.Index
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
-import uk.co.coen.capsulecrm.client.{COrganisation, CParty}
+import uk.co.coen.capsulecrm.client.{SimpleCapsuleEntity, COrganisation, CParty}
 import play.api.Play.current
 import ExecutionContext.Implicits.global
 
@@ -44,17 +44,21 @@ object Global extends GlobalSettings {
     def postcodeUnitCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
     def contactCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("contacts")
 
-    // import contacts from capsule
-    CParty.listAll().get().foreach {
-      party =>
-        if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
-          contactCollection.insert(Contact(
-            party.id,
-            party.getName,
-            party.firstEmail().emailAddress,
-            CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip)
-          ))
+    app.configuration.getString("capsulecrm.url") match {
+      case Some(url) =>
+        // import contacts from capsule
+        CParty.listAll().get().foreach {
+          party =>
+            if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
+              contactCollection.insert(Contact(
+                party.id,
+                party.getName,
+                party.firstEmail().emailAddress,
+                CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip)
+              ))
+            }
         }
+      case _ =>
     }
 
     postcodeUnitCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))

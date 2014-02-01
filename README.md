@@ -38,6 +38,12 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 
 ![screenshot](screenshot.png)
 
+### Background and usecase
+
+This software was built for [Coen Recruitment](http://www.coen.co.uk/), an education recruitment agency in the UK. Since
+they prioritise on location and endeavour to find teachers work close to home, their consultants need map area selection
+to market teachers to schools efficiently. Parts of this project are based on [CamelCode](https://github.com/analytically/camelcode).
+
 ### License
 
 Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
