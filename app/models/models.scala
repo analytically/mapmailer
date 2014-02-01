@@ -4,10 +4,11 @@ import reactivemongo.bson.Macros.Annotations.Key
 import reactivemongo.bson.{BSONObjectID, Macros}
 import play.modules.reactivemongo.json.BSONFormats._
 
-case class Contact(@Key("n") capsuleId: Long,
+case class Contact(@Key("cid") contactId: String,
                    @Key("n") name: String,
                    @Key("em") emailAddress: String,
                    @Key("pc") postcode: String,
+                   @Key("loc") location: Location,
                    id: Option[BSONObjectID] = None)
 
 object Contact {
@@ -34,5 +35,6 @@ object PostcodeUnit {
 object JsonFormats {
   import play.api.libs.json.Json
 
+  implicit val locationFormat = Json.format[Location]
   implicit val contactFormat = Json.format[Contact]
 }

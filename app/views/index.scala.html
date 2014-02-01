@@ -1,3 +1,4 @@
+@(location: models.Location, placeMarker: Boolean, markerPopup: Option[String] = None)
 @main("MapMailer") {
 <script type="text/javascript" language="javascript" src="//code.jquery.com/jquery.js"></script>
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
@@ -5,7 +6,12 @@
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript">
     function init() {
-        var map = new L.Map('map').setView([53, -2], 7);
+        var map = new L.Map('map').setView([@location.latitude, @location.longitude], 7);
+
+        @if(placeMarker) {
+            map.setZoom(14);
+            var marker = L.marker([@location.latitude, @location.longitude]).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
+        }
 
         // Initialise the FeatureGroup to store editable layers
         var drawnItems = new L.FeatureGroup();
