@@ -1,16 +1,31 @@
 @(location: models.Location, placeMarker: Boolean, markerPopup: Option[String] = None)
 @main("MapMailer") {
 <script type="text/javascript" language="javascript" src="//code.jquery.com/jquery.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/jquery.clipboard.js"></script>
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript">
     function init() {
+        jQuery.extend({
+            postJSON: function (url, data, callback) {
+                return jQuery.ajax({
+                    type: "POST",
+                    url: url,
+                    data: JSON.stringify(data),
+                    success: callback,
+                    dataType: "json",
+                    contentType: "application/json",
+                    processData: false
+                });
+            }
+        });
+
         var map = new L.Map('map').setView([@location.latitude, @location.longitude], 7);
 
         @if(placeMarker) {
-            map.setZoom(14);
-            var marker = L.marker([@location.latitude, @location.longitude]).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
+            map.setZoom(12);
+            L.marker([@location.latitude, @location.longitude]).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
         }
 
         // Initialise the FeatureGroup to store editable layers
@@ -34,7 +49,7 @@
                     metric: false
                 },
                 rectangle: false,
-                circle: false,
+                circle: true,
                 marker: false
             },
             edit: {
@@ -49,16 +64,23 @@
         }).addTo(map);
 
         map.on('draw:created', function (e) {
-            var type = e.layerType,
-                    layer = e.layer;
+            var type = e.layerType, layer = e.layer;
 
-            if (type === 'polygon') {
-                console.log(layer.toGeoJSON());
+            if (type === 'polygon' || type === 'circle') {
+                $.postJSON('/search', layer.toGeoJSON(), function(data) {
+                    $.each(data, function(i, party) {
+                        L.marker([party.location.latitude, party.location.longitude]).addTo(map).bindPopup(party.name);
+                    });
 
-                layer.bindPopup('Found 34 contacts. <button type="button" class="btn btn-primary">Email</button>');
+                    layer.bindPopup('Found ' + data.length + ' parties. <a href="#" class="copy button fa fa-clipboard">copy</a>');
+
+                    $('a.copy').clipboard({
+                        path: '/assets/flashes/jquery.clipboard.swf'
+                    });
+
+                    drawnItems.addLayer(layer);
+                }, 'json');
             }
-
-            drawnItems.addLayer(layer);
         });
 
         new L.Control.Scale({maxWidth: 1200, metric: false}).addTo(map);

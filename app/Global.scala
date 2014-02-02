@@ -1,7 +1,7 @@
 import actors.ProcessCPOCsvEntry
 import akka.actor.Props
 import com.google.common.base.CharMatcher
-import models.{PostcodeUnit, Contact}
+import models.{PostcodeUnit, Party}
 import models.csv.CodePointOpenCsvEntry
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
@@ -16,7 +16,7 @@ import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONDocument
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
-import uk.co.coen.capsulecrm.client.CParty
+import uk.co.coen.capsulecrm.client.{COrganisation, CParty}
 import play.api.Play.current
 import ExecutionContext.Implicits.global
 
@@ -45,12 +45,12 @@ object Global extends GlobalSettings {
     def postcodeUnitCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
     postcodeUnitCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
 
-    def contactCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("contacts")
-    contactCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
+    def partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+    partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) =>
-        // import contacts from capsule
+        // import parties from capsule
         CParty.listAll().get().foreach {
           party =>
             if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
@@ -59,14 +59,15 @@ object Global extends GlobalSettings {
 
               postcodeUnitOption.map {
                 case Some(postcodeUnit) =>
-                  contactCollection.insert(Contact(
+                  partyCollection.insert(Party(
                     party.id.toString,
                     party.getName,
                     party.firstEmail().emailAddress,
                     postcode,
+                    party.isInstanceOf[COrganisation],
                     postcodeUnit.location
                   ))
-                case None => Logger.info(s"Unable to find location for contact ${party.getName} with postcode ${postcode}")
+                case None => Logger.info(s"Unable to find location for party ${party.getName} with postcode ${postcode}")
               }
             }
         }
