@@ -41,6 +41,6 @@ object Application extends Controller with MongoController {
       .find(BSONDocument("loc" -> BSONDocument("$geoWithin" -> BSONDocument("$geometry" -> ))))
       .cursor[Party]*/
 
-    Future.successful(Ok(Json.toJson(List(Party("2", "name", "email", "", true, Location(52,-1))))))
+    Future.successful(Ok(Json.toJson(List(Party("2", "name", "email", "", true, Location(-2.40396726, 53.67323978))))))
   }
 }

@@ -5,6 +5,7 @@
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
 <script type="text/javascript">
     function init() {
         jQuery.extend({
@@ -25,7 +26,9 @@
 
         @if(placeMarker) {
             map.setZoom(12);
-            L.marker([@location.latitude, @location.longitude]).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
+
+            var subjectIcon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
+            L.marker([@location.latitude, @location.longitude], {icon: subjectIcon}).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
         }
 
         // Initialise the FeatureGroup to store editable layers
@@ -69,7 +72,14 @@
             if (type === 'polygon' || type === 'circle') {
                 $.postJSON('/search', layer.toGeoJSON(), function(data) {
                     $.each(data, function(i, party) {
-                        L.marker([party.location.latitude, party.location.longitude]).addTo(map).bindPopup(party.name);
+                        if (party.organisation) {
+                            var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
+                            L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon}).addTo(map).bindPopup(party.name);
+                        }
+                        else {
+                            var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
+                            L.marker([party.location.latitude, party.location.longitude], {icon: personIcon}).addTo(map).bindPopup(party.name);
+                        }
                     });
 
                     layer.bindPopup('Found ' + data.length + ' parties. <a href="#" class="copy button fa fa-clipboard">copy</a>');
