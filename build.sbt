@@ -18,7 +18,7 @@ libraryDependencies += "org.reactivemongo" % "play2-reactivemongo_2.10" % "0.10.
 
 libraryDependencies += "com.typesafe.play.extras" %% "play-geojson" % "1.0.0"
 
-libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.2.1"
+libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.2.2"
 
 libraryDependencies += "org.apache.camel" % "camel-core" % "2.11.3"
 

@@ -14,6 +14,7 @@ case class Party(@Key("cid") partyId: String,
                  @Key("pc") postcode: String,
                  @Key("org") organisation: Boolean,
                  @Key("loc") location: Location,
+                 @Key("grps") groups: List[String],
                  id: Option[BSONObjectID] = None)
 
 object Party {

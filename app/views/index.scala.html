@@ -1,8 +1,9 @@
-@(location: models.Location, placeMarker: Boolean, markerPopup: Option[String] = None)
+@(groups: List[String], location: models.Location, placeMarker: Boolean, markerPopup: Option[String] = None)
 @main("MapMailer") {
 <script type="text/javascript" language="javascript" src="//code.jquery.com/jquery.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/jquery.clipboard.js"></script>
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+
 <script type="text/javascript" language="javascript" src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
@@ -22,20 +23,54 @@
             }
         });
 
-        var map = new L.Map('map').setView([@location.latitude, @location.longitude], 7);
+        L.Map = L.Map.extend({
+            openPopup: function(popup) {
+                if (!(popup instanceof L.Popup)) {
+                    var content = popup;
+                    popup = new L.Popup(options)
+                        .setLatLng(latlng)
+                        .setContent(content);
+                    }
+                popup._isOpen = true;
+
+                this._popup = popup;
+                return this.addLayer(popup);
+            }
+        });
+
+        @for(group <- groups) {
+        var @(group)Group = new L.LayerGroup();
+        }
+
+        var mapTiles = L.tileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        var map = new L.Map('map', {
+            center: new L.LatLng(@location.latitude, @location.longitude),
+            zoom: 7,
+            layers: [mapTiles, @for(group <- groups) { @(group)Group, }]
+        });
+
+        var overlays = {
+            @for(group <- groups) { "@(group)":@(group)Group, }
+        };
+        L.control.layers({}, overlays).addTo(map);
+
+        var markers = [];
 
         @if(placeMarker) {
             map.setZoom(12);
 
             var subjectIcon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
-            L.marker([@location.latitude, @location.longitude], {icon: subjectIcon}).addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
+            var marker = L.marker([@location.latitude, @location.longitude], {icon: subjectIcon})
+            markers.push(marker.getLatLng());
+            marker.addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
         }
 
-        // Initialise the FeatureGroup to store editable layers
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
-        // Initialise the draw control and pass it the FeatureGroup of editable layers
         var drawControl = new L.Control.Draw({
             draw: {
                 polyline: false,
@@ -52,7 +87,7 @@
                     metric: false
                 },
                 rectangle: false,
-                circle: true,
+                circle: false,
                 marker: false
             },
             edit: {
@@ -61,28 +96,31 @@
         });
         map.addControl(drawControl);
 
-        // add an OpenStreetMap tile layer
-        L.tileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
         map.on('draw:created', function (e) {
             var type = e.layerType, layer = e.layer;
 
-            if (type === 'polygon' || type === 'circle') {
+            if (type === 'polygon') {
                 $.postJSON('/search', layer.toGeoJSON(), function(data) {
                     $.each(data, function(i, party) {
                         if (party.organisation) {
                             var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
-                            L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon}).addTo(map).bindPopup(party.name);
+                            var marker = L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon})
+                            if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
+                                markers.push(marker.getLatLng());
+                                marker.addTo(map).bindPopup(party.name + " (" + party.postcode + ")");
+                            }
                         }
                         else {
                             var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
-                            L.marker([party.location.latitude, party.location.longitude], {icon: personIcon}).addTo(map).bindPopup(party.name);
+                            var marker = L.marker([party.location.latitude, party.location.longitude], {icon: personIcon})
+                            if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
+                                markers.push(marker.getLatLng());
+                                marker.addTo(map).bindPopup(party.name + " (" + party.postcode + ")");
+                            }
                         }
                     });
 
-                    layer.bindPopup('Found ' + data.length + ' parties. <a href="#" class="copy button fa fa-clipboard">copy</a>');
+                    layer.bindPopup('Found ' + data.length + ' parties. <a href="#" class="copy button fa fa-clipboard">copy people</a> copy organisations');
 
                     $('a.copy').clipboard({
                         path: '/assets/flashes/jquery.clipboard.swf'

@@ -1,6 +1,7 @@
 import actors.ProcessCPOCsvEntry
 import akka.actor.Props
-import com.google.common.base.CharMatcher
+import com.google.common.base.{Splitter, CharMatcher}
+import models.csv.CodePointOpenCsvEntry
 import models.{PostcodeUnit, Party}
 import models.csv.CodePointOpenCsvEntry
 import org.apache.camel.builder.RouteBuilder
@@ -11,12 +12,15 @@ import play.api._
 import play.libs.Akka
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.{Geo2D, Ascending}
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONDocument
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
-import uk.co.coen.capsulecrm.client.{COrganisation, CParty}
+import scala.Some
+import uk.co.coen.capsulecrm.client._
 import play.api.Play.current
 import ExecutionContext.Implicits.global
 
@@ -56,6 +60,17 @@ object Global extends GlobalSettings {
             if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
               val postcode = CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip)
               val postcodeUnitOption = postcodeUnitCollection.find(BSONDocument("pc" -> postcode.toUpperCase)).one[PostcodeUnit]
+              val tags = party.listTags.get().map(_.name).map(_.capitalize).toList.distinct
+
+              val groups = if (party.isInstanceOf[COrganisation]) {
+                tags
+              } else {
+                val person = party.asInstanceOf[CPerson]
+                val jobTitleGroups =
+                  if (person.jobTitle != null) Splitter.on(',').trimResults().omitEmptyStrings().split(person.jobTitle).map(_.capitalize).toList.distinct else Nil
+
+                jobTitleGroups ::: tags
+              }
 
               postcodeUnitOption.map {
                 case Some(postcodeUnit) =>
@@ -65,7 +80,8 @@ object Global extends GlobalSettings {
                     party.firstEmail().emailAddress,
                     postcode,
                     party.isInstanceOf[COrganisation],
-                    postcodeUnit.location
+                    postcodeUnit.location,
+                    groups
                   ))
                 case None => Logger.info(s"Unable to find location for party ${party.getName} with postcode ${postcode}")
               }
