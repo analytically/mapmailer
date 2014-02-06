@@ -33,9 +33,9 @@ import com.google.common.base.CharMatcher
  * @param field for which field to return distinct values
  * @param query the document selector
  */
-case class Distinct[T](collectionName: String,
+case class Distinct(collectionName: String,
                     field: String,
-                    query: Option[BSONDocument] = None) extends Command[List[T]] {
+                    query: Option[BSONDocument] = None) extends Command[List[String]] {
   override def makeDocuments =
     BSONDocument(
       "distinct" -> BSONString(collectionName),
@@ -48,9 +48,9 @@ case class Distinct[T](collectionName: String,
 /**
  * Deserializer for the Distinct command. Basically returns a List[String].
  */
-object Distinct extends BSONCommandResultMaker[List[_]] {
-  def apply[T](document: BSONDocument) =
-    CommandError.checkOk(document, Some("distinct")).toLeft(document.getAs[List[T]]("values").get)
+object Distinct extends BSONCommandResultMaker[List[String]] {
+  def apply(document: BSONDocument) =
+    CommandError.checkOk(document, Some("distinct")).toLeft(document.getAs[List[String]]("values").get)
 }
 
 object Application extends Controller with MongoController {
