@@ -1,8 +1,8 @@
 mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.png)](https://travis-ci.org/analytically/mapmailer)
 =========
 
-Select CRM parties to email by drawing an area on a map. Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
-Follow [@analytically](http://twitter.com/analytically) for updates. UNDER ACTIVE DEVELOPMENT
+Email CRM contacts by drawing an area on a map. Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
+Follow [@analytically](http://twitter.com/analytically) for updates.
 
 ![screenshot](screenshot.png)
 
@@ -29,6 +29,17 @@ files in the `codepointopen` directory.
 After each file is imported, it will be moved to the `codepointopen/done` directory.
 
 Then visit [http://localhost:9000](http://localhost:9000) and you should see the welcome screen.
+
+### Technology
+
+* [Play Framework 2.2.1](http://www.playframework.org), as web framework
+* [Apache Camel](http://camel.apache.org) to [process and monitor](https://github.com/analytically/mapmailer/blob/master/app/Global.scala#L34) the `codepointopen` directory and to tell the actors about the postcodes
+* [Akka](http://akka.io) provides a nice concurrency model [to process the 1.7 million postcodes](https://github.com/analytically/mapmailer/blob/master/app/actors/actors.scala#L41) in under one minute on modern hardware
+* [GeoTools](http://www.geotools.org) converts the eastings/northings to latitude/longitude
+* [ReactiveMongo](http://reactivemongo.org/) is a scala MongoDB driver that provides fully non-blocking and asynchronous I/O operations
+* [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
+* [Leaflet](http://leafletjs.com/) for the map
+* [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/) for the UI
 
 ### Background and usecase
 
