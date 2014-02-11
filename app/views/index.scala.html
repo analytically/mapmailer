@@ -174,7 +174,7 @@
                 {{ join groups }}
             </div>
             <div class="col-lg-6">
-                <a href="mailto:{{ emailAddress }}?bcc=dropbox@@22156424.coen.capsulecrm.com" title="{{ emailAddress }}" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
             </div>
         </div>
 </script>
@@ -185,7 +185,7 @@
                 <strong>{{ name }}</strong> <span class="badge">{{ postcode }}</span>
             </div>
             <div class="col-lg-6">
-                <a href="mailto:{{ emailAddress }}?bcc=dropbox@@22156424.coen.capsulecrm.com" title="{{ emailAddress }}" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
                 <a href="{{ website }}" target="_blank" title="{{ website }}" class="btn btn-default btn-sm"><i class="fa fa-external-link fa-lg"></i></a>
             </div>
         </div>
