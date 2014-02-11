@@ -5,17 +5,17 @@ import reactivemongo.bson.{BSONObjectID, Macros}
 import play.modules.reactivemongo.json.BSONFormats._
 
 case class Location(@Key("lng") longitude: Double,
-                    @Key("lat") latitude: Double,
-                    id: Option[BSONObjectID] = None)
+                    @Key("lat") latitude: Double)
 
 case class Party(@Key("cid") partyId: String,
                  @Key("n") name: String,
                  @Key("em") emailAddress: String,
+                 @Key("ws") website: Option[String],
                  @Key("pc") postcode: String,
                  @Key("org") organisation: Boolean,
                  @Key("loc") location: Location,
                  @Key("grps") groups: List[String],
-                 id: Option[BSONObjectID] = None)
+                 _id: BSONObjectID = BSONObjectID.generate)
 
 object Party {
   implicit val locationHandler = Macros.handler[Location]
@@ -25,7 +25,7 @@ object Party {
 case class PostcodeUnit(@Key("pc") postcode: String,
                         @Key("q") pqi: String,
                         @Key("loc") location: Location,
-                        id: Option[BSONObjectID] = None)
+                        _id: BSONObjectID = BSONObjectID.generate)
 
 object PostcodeUnit {
   implicit val locationHandler = Macros.handler[Location]
@@ -33,7 +33,6 @@ object PostcodeUnit {
 }
 
 object JsonFormats {
-
   import play.api.libs.json.Json
 
   implicit val locationFormat = Json.format[Location]

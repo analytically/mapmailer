@@ -349,6 +349,8 @@
                 return;
             }
 
+
+
             this._fireCreatedEvent();
             this.disable();
             if (this.options.repeatMode) {

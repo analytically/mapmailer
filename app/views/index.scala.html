@@ -1,10 +1,11 @@
-@(groups: List[String], location: models.Location, placeMarker: Boolean, markerPopup: Option[String] = None)
+@(groups: List[String], center: models.Location)
 @main("MapMailer") {
 <script type="text/javascript" language="javascript" src="//code.jquery.com/jquery.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/jquery.clipboard.js"></script>
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
-
+<script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/purl.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
 <script type="text/javascript">
@@ -23,20 +24,27 @@
             }
         });
 
-        L.Map = L.Map.extend({
-            openPopup: function(popup) {
-                if (!(popup instanceof L.Popup)) {
-                    var content = popup;
-                    popup = new L.Popup(options)
-                        .setLatLng(latlng)
-                        .setContent(content);
-                    }
-                popup._isOpen = true;
+        Handlebars.registerHelper('join', function(items, block) {
+            var delimiter = block.hash.delimiter || ", ",
+            start = start = block.hash.start || 0,
+            len = items ? items.length : 0,
+            end = block.hash.end || len,
+            out = "";
 
-                this._popup = popup;
-                return this.addLayer(popup);
+            if(end > len) end = len;
+
+            if ('function' === typeof block) {
+                for (i = start; i < end; i++) {
+                    if (i > start) out += delimiter;
+                    if('string' === typeof items[i]) out += items[i];
+                    else out += block(items[i]);
+                }
+                return out;
+            } else {
+                return [].concat(items).slice(start, end).join(delimiter);
             }
         });
+
 
         @for(group <- groups) {
         var @(group)Group = new L.LayerGroup();
@@ -47,9 +55,9 @@
         });
 
         var map = new L.Map('map', {
-            center: new L.LatLng(@location.latitude, @location.longitude),
+            center: new L.LatLng(@center.latitude, @center.longitude),
             zoom: 7,
-            layers: [mapTiles, @for(group <- groups) { @(group)Group, }]
+            layers: [mapTiles]
         });
 
         var overlays = {
@@ -57,15 +65,43 @@
         };
         L.control.layers({}, overlays).addTo(map);
 
+        var popupOptions = {maxWidth: 600};
         var markers = [];
 
-        @if(placeMarker) {
-            map.setZoom(12);
+        var organisationPopupTemplate = Handlebars.compile($("#organisation-popup").html());
+        var personPopupTemplate = Handlebars.compile($("#person-popup").html());
 
-            var subjectIcon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
-            var marker = L.marker([@location.latitude, @location.longitude], {icon: subjectIcon})
-            markers.push(marker.getLatLng());
-            marker.addTo(map).bindPopup("@markerPopup.getOrElse("")").openPopup();
+        var handle = function(party) {
+            if (party.organisation) {
+                var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
+                var marker = L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon});
+                if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
+                    markers.push(marker.getLatLng());
+                    marker.bindPopup(L.popup(popupOptions).setContent(organisationPopupTemplate(party)));
+                    $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
+                }
+                return marker;
+            }
+            else {
+                var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
+                var marker = L.marker([party.location.latitude, party.location.longitude], {icon: personIcon});
+                if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
+                    markers.push(marker.getLatLng());
+                    marker.bindPopup(L.popup(popupOptions).setContent(personPopupTemplate(party)));
+                    $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
+                }
+                return marker;
+            }
+        };
+
+        if ($.url().param('partyId')) {
+            map.setZoom(13);
+
+            $.getJSON('/party/' + $.url().param('partyId'), function(party) {
+                map.panTo(new L.LatLng(party.location.latitude, party.location.longitude));
+                var icon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
+                handle(party).setIcon(icon).addTo(map).openPopup();
+            });
         }
 
         var drawnItems = new L.FeatureGroup();
@@ -82,7 +118,7 @@
                         message: '<strong>Nein!<strong> You can\'t draw an intersecting polygon.'
                     },
                     shapeOptions: {
-                        color: '#a94442'
+                        color: '#42a7a9'
                     },
                     metric: false
                 },
@@ -100,30 +136,24 @@
             var type = e.layerType, layer = e.layer;
 
             if (type === 'polygon') {
-                $.postJSON('/search', layer.toGeoJSON(), function(data) {
+                $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
                     $.each(data, function(i, party) {
-                        if (party.organisation) {
-                            var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
-                            var marker = L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon})
-                            if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
-                                markers.push(marker.getLatLng());
-                                marker.addTo(map).bindPopup(party.name + " (" + party.postcode + ")");
-                            }
-                        }
-                        else {
-                            var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
-                            var marker = L.marker([party.location.latitude, party.location.longitude], {icon: personIcon})
-                            if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
-                                markers.push(marker.getLatLng());
-                                marker.addTo(map).bindPopup(party.name + " (" + party.postcode + ")");
-                            }
-                        }
+                        handle(party);
                     });
 
-                    layer.bindPopup('Found ' + data.length + ' parties. <a href="#" class="copy button fa fa-clipboard">copy people</a> copy organisations');
+                    var template = Handlebars.compile($("#area-popup").html());
+                    var popup = L.popup(popupOptions).setContent(template(data)).openOn(layer);
 
                     $('a.copy').clipboard({
-                        path: '/assets/flashes/jquery.clipboard.swf'
+                        path: '/assets/flashes/jquery.clipboard.swf',
+
+                        copy: function() {
+                            var emailAddresses = "";
+                            $.each (data, function (i, party) {
+                                emailAddresses += party.name;
+                            });
+                            return emailAddresses;
+                        }
                     });
 
                     drawnItems.addLayer(layer);
@@ -136,6 +166,35 @@
         new L.Control.Scale({maxWidth: 300, metric: false}).addTo(map);
     }
 </script>
+
+<script id="person-popup" type="text/x-handlebars-template">
+        <div class="row">
+            <div class="col-lg-6">
+                <strong>{{ name }}</strong> <span class="badge">{{ postcode }}</span><br/>
+                {{ join groups }}
+            </div>
+            <div class="col-lg-6">
+                <a href="mailto:{{ emailAddress }}?bcc=dropbox@@22156424.coen.capsulecrm.com" title="{{ emailAddress }}" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+            </div>
+        </div>
+</script>
+
+<script id="organisation-popup" type="text/x-handlebars-template">
+        <div class="row">
+            <div class="col-lg-6">
+                <strong>{{ name }}</strong> <span class="badge">{{ postcode }}</span>
+            </div>
+            <div class="col-lg-6">
+                <a href="mailto:{{ emailAddress }}?bcc=dropbox@@22156424.coen.capsulecrm.com" title="{{ emailAddress }}" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+                <a href="{{ website }}" target="_blank" title="{{ website }}" class="btn btn-default btn-sm"><i class="fa fa-external-link fa-lg"></i></a>
+            </div>
+        </div>
+</script>
+
+<script id="area-popup" type="text/x-handlebars-template">
+    Found {{ this.length }} parties. <a href="#" class="copy"><i class="fa fa-clipboard"></i>test</a> copy organisations
+</script>
+
 <body onLoad="javascript:init();">
 <div id="map"></div>
 </body>
