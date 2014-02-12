@@ -93,7 +93,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
                               party.getName,
                               party.firstEmail().emailAddress,
                               if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                              postcode,
+                              party.firstAddress().zip.toUpperCase,
                               party.isInstanceOf[COrganisation],
                               postcodeUnit.location,
                               groupsToSave
@@ -105,7 +105,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
                               party.getName,
                               party.firstEmail().emailAddress,
                               if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                              postcode,
+                              party.firstAddress().zip.toUpperCase,
                               party.isInstanceOf[COrganisation],
                               postcodeUnit.location,
                               groupsToSave

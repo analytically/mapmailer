@@ -17,7 +17,6 @@ import JsonFormats._
 
 object Application extends Controller with MongoController {
   def partyCollection: BSONCollection = db.collection[BSONCollection]("parties")
-  def postcodeUnitCollection: BSONCollection = db.collection[BSONCollection]("pcu")
 
   implicit val locationWites = Json.writes[Location]
   implicit val partyWrites = Json.writes[Party]
@@ -38,11 +37,23 @@ object Application extends Controller with MongoController {
 
   def search = Action.async(parse.json) {
     request =>
-      val coordinates = (request.body \ "geometry" \ "coordinates").as[List[List[List[Double]]]].flatten.map(coordinate => BSONArray(coordinate.head, coordinate.tail.head))
+      val parties = (request.body \ "geometry" \ "type").as[String].toLowerCase match {
+        case "circle" =>
+          val coordinates = (request.body \ "geometry" \ "coordinates").as[Array[Double]]
 
-      val parties = partyCollection.find(BSONDocument("loc" ->
-        BSONDocument("$geoWithin" -> BSONDocument("$geometry" -> BSONDocument("type" -> "Polygon", "coordinates" -> BSONArray(BSONArray(coordinates)))))))
-        .cursor[Party]
+          partyCollection.find(BSONDocument("loc" ->
+            BSONDocument("$geoWithin" -> BSONDocument("$centerSphere" -> BSONArray(coordinates, (request.body \ "geometry" \ "radius").as[Double] / 1609.34 / 3959)))))
+            .cursor[Party]
+
+        case "polygon" =>
+          val coordinates = (request.body \ "geometry" \ "coordinates").as[Array[Array[Array[Double]]]].flatten.map(coordinate => BSONArray(coordinate.head, coordinate.tail.head))
+
+          partyCollection.find(BSONDocument("loc" ->
+            BSONDocument("$geoWithin" -> BSONDocument("$geometry" -> BSONDocument("type" -> "Polygon", "coordinates" -> BSONArray(BSONArray(coordinates)))))))
+            .cursor[Party]
+
+        case _ => ???
+      }
 
       parties.collect[List](upTo = 300).map {
         parties =>

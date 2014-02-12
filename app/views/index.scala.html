@@ -45,6 +45,15 @@
             }
         });
 
+        L.Circle = L.Circle.extend({
+    	    toGeoJSON: function () {
+                return L.GeoJSON.getFeature(this, {
+                    type: 'Circle',
+                    coordinates: L.GeoJSON.latLngToCoords(this.getLatLng()),
+                    radius: this.getRadius()
+                });
+            }
+        });
 
         @for(group <- groups) {
         var @(group)Group = new L.LayerGroup();
@@ -65,9 +74,10 @@
         };
         L.control.layers({}, overlays).addTo(map);
 
-        var popupOptions = {maxWidth: 600};
+        var popupOptions = {minWidth: 200, maxWidth: 300};
         var markers = [];
 
+        var layerTemplate = Handlebars.compile($("#area-popup").html());
         var organisationPopupTemplate = Handlebars.compile($("#organisation-popup").html());
         var personPopupTemplate = Handlebars.compile($("#person-popup").html());
 
@@ -118,12 +128,16 @@
                         message: '<strong>Nein!<strong> You can\'t draw an intersecting polygon.'
                     },
                     shapeOptions: {
-                        color: '#42a7a9'
+                        color: '#2F4F4F'
                     },
                     metric: false
                 },
                 rectangle: false,
-                circle: false,
+                circle: {
+                    shapeOptions: {
+                        color: '#2F4F4F'
+                    }
+                },
                 marker: false
             },
             edit: {
@@ -135,14 +149,13 @@
         map.on('draw:created', function (e) {
             var type = e.layerType, layer = e.layer;
 
-            if (type === 'polygon') {
+            if (type === 'polygon' || type === 'circle') {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
                     $.each(data, function(i, party) {
                         handle(party);
                     });
 
-                    var template = Handlebars.compile($("#area-popup").html());
-                    var popup = L.popup(popupOptions).setContent(template(data)).openOn(layer);
+                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data)));
 
                     $('a.copy').clipboard({
                         path: '/assets/flashes/jquery.clipboard.swf',
@@ -168,27 +181,35 @@
 </script>
 
 <script id="person-popup" type="text/x-handlebars-template">
-        <div class="row">
-            <div class="col-lg-6">
-                <strong>{{ name }}</strong> <span class="badge">{{ postcode }}</span><br/>
-                {{ join groups }}
-            </div>
-            <div class="col-lg-6">
-                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+    <div class="row">
+        <div class="col-8">
+            <strong><span title="{{postcode}}">{{ name }}</span></strong><br/>
+            {{ join groups }}
+        </div>
+        <div class="col-4 text-right">
+            <div class="btn-group">
+                <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Capsule CRM" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-gear fa-lg"></i></a>
+                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
             </div>
         </div>
+    </div>
 </script>
 
 <script id="organisation-popup" type="text/x-handlebars-template">
-        <div class="row">
-            <div class="col-lg-6">
-                <strong>{{ name }}</strong> <span class="badge">{{ postcode }}</span>
-            </div>
-            <div class="col-lg-6">
-                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
+    <div class="container">
+    <div class="row">
+        <div class="col-7 col-md-7">
+            <strong><span title="{{postcode}}">{{ name }}</span></strong>
+        </div>
+        <div class="col-5 col-lg-5 text-right">
+            <div class="btn-group">
+                <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Capsule CRM" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-gear fa-lg"></i></a>
+                <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="{{ emailAddress }}" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-envelope-o fa-lg"></i></a>
                 <a href="{{ website }}" target="_blank" title="{{ website }}" class="btn btn-default btn-sm"><i class="fa fa-external-link fa-lg"></i></a>
             </div>
         </div>
+    </div>
+    </div>
 </script>
 
 <script id="area-popup" type="text/x-handlebars-template">
