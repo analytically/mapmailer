@@ -74,7 +74,7 @@
         };
         L.control.layers({}, overlays).addTo(map);
 
-        var popupOptions = {minWidth: 200, maxWidth: 300};
+        var popupOptions = {minWidth: 260, maxWidth: 300};
         var markers = [];
 
         var layerTemplate = Handlebars.compile($("#area-popup").html());
@@ -105,12 +105,14 @@
         };
 
         if ($.url().param('partyId')) {
-            map.setZoom(13);
-
             $.getJSON('/party/' + $.url().param('partyId'), function(party) {
+                map.setZoom(13);
                 map.panTo(new L.LatLng(party.location.latitude, party.location.longitude));
                 var icon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
                 handle(party).setIcon(icon).addTo(map).openPopup();
+            })
+            .fail(function () {
+                alert("Can't find party with id " + $.url().param('partyId'))
             });
         }
 
@@ -196,7 +198,6 @@
 </script>
 
 <script id="organisation-popup" type="text/x-handlebars-template">
-    <div class="container">
     <div class="row">
         <div class="col-7 col-md-7">
             <strong><span title="{{postcode}}">{{ name }}</span></strong>
@@ -208,7 +209,6 @@
                 <a href="{{ website }}" target="_blank" title="{{ website }}" class="btn btn-default btn-sm"><i class="fa fa-external-link fa-lg"></i></a>
             </div>
         </div>
-    </div>
     </div>
 </script>
 

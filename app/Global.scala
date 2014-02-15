@@ -17,6 +17,7 @@ import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.IndexType.{Geo2D, Ascending}
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONDocument
+import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 import scala.Some
@@ -58,8 +59,8 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) =>
         val groupsToIgnore = app.configuration.getStringList("groups.ignore").get
-        val groupsToCollapseIfContains = app.configuration.getStringList("groups.collapseIfContains").get
         val skipImport = app.configuration.getStringList("groups.skipImport").get
+        val groupsToCollapseIfContains = app.configuration.getStringList("groups.collapseIfContains").get
 
         CParty.listAll().get().foreach {
           party =>
@@ -82,7 +83,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
 
                   if (!groups.exists(skipImport.toSet)) {
                     val postcode = CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase
-                    val groupsToSave = groups.diff(skipImport).map(CharMatcher.JAVA_LETTER.retainFrom(_)).map(_.capitalize)
+                    val groupsToSave = dedupe(groups.diff(skipImport), (a:String, b:String) => a.toLowerCase == b.toLowerCase).map(CharMatcher.JAVA_LETTER.retainFrom(_)).map(_.capitalize)
 
                     postcodeUnitCollection.find(BSONDocument("pc" -> postcode)).one[PostcodeUnit].map {
                       case Some(postcodeUnit) =>
@@ -123,6 +124,20 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
         }
       case _ =>
     }
+  }
+
+  def dedupe[T](elements: List[T], predicate: (T, T) => Boolean = (a: T, b: T) => { a == b }): List[T] = {
+    @tailrec def recur(raw: List[T], deduped: List[T]): List[T] =
+      raw match {
+        case Nil => deduped // no more raw elements to process, just return the final deduped list
+        case head :: tail => recur(tail,
+          deduped.exists(predicate(_, head)) match {
+            case true => deduped  // element is in the list, just use the deduped list as-is
+            case false => head :: deduped // not in the list, so add it.
+          })
+      }
+
+    recur(elements, Nil).reverse
   }
 
   override def onStop(app: Application) = {
