@@ -13,7 +13,9 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
 
-libraryDependencies +=  "com.google.code.findbugs" % "jsr305" % "2.0.3" // see http://stackoverflow.com/questions/10007994/why-do-i-need-jsr305-to-use-guava-in-scala
+libraryDependencies += "com.google.code.findbugs" % "jsr305" % "2.0.3" // see http://stackoverflow.com/questions/10007994/why-do-i-need-jsr305-to-use-guava-in-scala
+
+libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.2.1"
 
 libraryDependencies += "org.reactivemongo" % "play2-reactivemongo_2.10" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
 
