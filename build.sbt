@@ -2,6 +2,8 @@ name := "mapmailer"
 
 version := "1.0-SNAPSHOT"
 
+resolvers += "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/"
+
 resolvers += "Open Source Geospatial Foundation Repository" at "http://download.osgeo.org/webdav/geotools/"
 
 libraryDependencies ++= Seq(
