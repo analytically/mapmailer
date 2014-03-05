@@ -2,25 +2,45 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
     <head>
         <title>@title</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+
         <link rel="shortcut icon" type="image/png" href="routes.Assets.at("images/favicon.png")">
+
         <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-        <link rel="stylesheet" type="text/css" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/chosen/1.1.0/chosen.css">
+
         <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+
+        <link rel="stylesheet" type="text/css" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
         <link rel="stylesheet" type="text/css" href="/assets/stylesheets/leaflet.draw.css" />
         <link rel="stylesheet" type="text/css" href="/assets/stylesheets/leaflet.awesome-markers.css" />
+
         <style>
             html, body, #map {
                 height:100%;
                 width:100%;
-                padding:0px;
-                margin:0px;
+                padding:0;
+                margin:0;
+                overflow: hidden;
             }
             [class^="col-"] {
                 padding-left: 4px;
                 padding-right: 4px;
+            }
+            .leaflet-control-layers label {
+                font-weight: normal;
+                margin-bottom: 0px;
+            }
+
+            .leaflet-control-layers-expanded {
+                overflow: auto;
+                max-height: 700px;
             }
         </style>
     </head>
