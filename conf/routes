@@ -2,9 +2,11 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
-GET     /party/:id                  controllers.Application.party(id: String)
-POST    /party/search               controllers.Application.search
+GET         /                    controllers.Application.index
+GET         /ping                controllers.Application.ping
+GET         /party/:id           controllers.Application.party(id: String)
+POST        /party/search        controllers.Application.search
+POST        /party/email         controllers.Application.email
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET         /assets/*file        controllers.Assets.at(path="/public", file)
