@@ -5,6 +5,7 @@
 
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/swag.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/selectize.js"></script>
 
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.js"></script>
@@ -12,6 +13,8 @@
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
 <script type="text/javascript">
     function init() {
+        Swag.registerHelpers(Handlebars);
+
         jQuery.extend({
             postJSON: function (url, data, callback) {
                 return jQuery.ajax({
@@ -26,24 +29,17 @@
             }
         });
 
-        Handlebars.registerHelper('join', function(items, block) {
-            var delimiter = block.hash.delimiter || ", ",
-            start = start = block.hash.start || 0,
-            len = items ? items.length : 0,
-            end = block.hash.end || len,
-            out = "";
-
-            if(end > len) end = len;
-
-            if ('function' === typeof block) {
-                for (i = start; i < end; i++) {
-                    if (i > start) out += delimiter;
-                    if('string' === typeof items[i]) out += items[i];
-                    else out += block(items[i]);
+        Handlebars.registerHelper("slice", function (array, size, options, elseFn) {
+            if (array && array.length > 0) {
+                var buffer = "";
+                var len = array.length, i = 0;
+                while (i < len) {
+                    buffer += options.fn(array.slice(i, i += size));
                 }
-                return out;
-            } else {
-                return [].concat(items).slice(start, end).join(delimiter);
+                return buffer;
+            }
+            else {
+                return elseFn();
             }
         });
 
@@ -155,10 +151,12 @@
         map.on('popupopen', function() {
             $('#to').selectize({
                 plugins: ['remove_button'],
-                persist: false,
-                openOnFocus: false,
-                onChange: function(value) {
-                    $('#email').attr("href", "mailto:" + value);
+                onItemRemove: function(value) {
+                    $('.email').attr('href', function (i, val) {
+                        var emailAddresses = val.substr(12).split(',');
+                        emailAddresses.splice($.inArray(value, emailAddresses), 1);
+                        return "mailto:?bcc=" + emailAddresses.join(',');
+                    });
                 }
             });
         });
@@ -168,9 +166,17 @@
 
             if (type === 'polygon' || type === 'circle') {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
+                    function compare(a,b) {
+                        if (a.name < b.name)
+                            return -1;
+                        if (a.name > b.name)
+                            return 1;
+                        return 0;
+                    }
+
                     data = data.filter(function(party) {
                         return party.partyId != $.url().param('partyId')
-                    });
+                    }).sort(compare);
 
                     $.each(data, function(i, party) {
                         createMarkerAndAddToLayer(party);
@@ -218,7 +224,7 @@
 </script>
 
 <script id="person-popup" type="text/x-handlebars-template">
-    <strong><span title="{{ join groups }} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
+    <strong><span title="{{ join groups ', '}} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
     <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in Capsule CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
 </script>
@@ -242,16 +248,19 @@
                     <h4 class="modal-title" id="myModalLabel">Email parties</h4>
                 </div>
                 <div class="modal-body">
-                    <select id="to" class="email form-control" name="to" multiple>
+                    <select id="to" class="form-control" name="to" multiple>
                         <option value=""></option>
                         {{#each this}}
-                        <option value="{{this.emailAddress}}" selected>{{this.name}} ({{ join groups }})</option>
+                        <option value="{{this.emailAddress}}" selected>{{this.name}}</option>
                         {{/each}}
                     </select>
                 </div>
                 <div class="modal-footer">
-                    <a href="mailto:{{#each this}}{{this.emailAddress}},{{/each}}" id="email" title="Will open your email with all email addresses in 'to:'..." class="btn btn-primary" >Email</a>
                     <a href="#" class="btn btn-default" data-dismiss="modal">Close</a>
+                    {{#slice this 40}}
+                        <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" target="_blank">Email</a>
+                    {{else}}
+                    {{/slice}}
                 </div>
             </div>
         </div>
