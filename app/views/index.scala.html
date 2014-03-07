@@ -32,9 +32,11 @@
         Handlebars.registerHelper("slice", function (array, size, options, elseFn) {
             if (array && array.length > 0) {
                 var buffer = "";
-                var len = array.length, i = 0;
+                var len = array.length, i = 0, j = 0;
                 while (i < len) {
-                    buffer += options.fn(array.slice(i, i += size));
+                    var slice = array.slice(i, i += size);
+                    slice.index = ++j;
+                    buffer += options.fn(slice);
                 }
                 return buffer;
             }
@@ -255,7 +257,13 @@
                 <div class="modal-footer">
                     <a href="#" class="btn btn-default" data-dismiss="modal">Close</a>
                     {{#slice this 40}}
-                        <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" target="_blank">Email</a>
+                        <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" target="_blank">
+                            {{#gt ../this.length 40}}
+                            Email {{index}}
+                            {{else}}
+                            Email
+                            {{/gt}}
+                        </a>
                     {{else}}
                     {{/slice}}
                 </div>
