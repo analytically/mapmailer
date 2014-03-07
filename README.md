@@ -12,24 +12,38 @@ Works with:
 
 #### Requirements
 
-- Java 6 or later
-- [Play Framework 2.2.2](http://www.playframework.org)
-- [MongoDB](http://www.mongodb.org)
+Java 6 or later. [MongoDB](http://www.mongodb.org) at localhost:27017. A Capsule CRM account and token.
 
-#### Setup
+#### Building (optional)
 
-Edit `conf/application.conf` and point it to a MongoDB installation (defaults to `localhost:27017`), add CRM details, and execute
+Requires [Play Framework 2.2](http://www.playframework.com/).
 
-``` sh
-play run
+```
+play assembly
 ```
 
-Then drop the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
-files in the `codepointopen` directory.
+This builds a single, executable 'fat' jar in `target/scala-2.10`.
 
-After each file is imported, it will be moved to the `codepointopen/done` directory.
+#### Running
 
-Then visit [http://localhost:9000](http://localhost:9000) and you should see the welcome screen.
+Prebuilt releases are available [here](https://github.com/analytically/mapmailer/releases).
+
+Requires [Java 7](http://java.com/en/download/index.jsp). Capsule CRM users can find their API token by visiting
+`My Preferences` via their username menu in the Capsule navigation bar. See [application.conf](conf/application.conf)
+for more configurable options.
+
+Copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
+files to the `codepointopen` directory in the same directory with the downloaded jar.
+
+The start the application:
+
+```
+java -Dcapsulecrm.url=https://example.capsulecrm.com -Dcapsulecrm.token=abcdef123456789 -jar mapmailer.jar
+```
+
+After all CodePoint Open files are imported, they are moved to the `codepointopen/done` directory.
+
+Then visit [http://localhost:9000](http://localhost:9000) and you should see the map.
 
 #### Technology
 
@@ -43,13 +57,13 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 * [Leaflet Draw](https://github.com/Leaflet/Leaflet.draw)
 * [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/)
 
-### Background and usecase
+#### Background and usecase
 
 This software was built for [Coen Recruitment](http://www.coen.co.uk/), an education recruitment agency in the UK. Since
 they prioritise on location and endeavour to find teachers work close to home, their consultants need map area selection
 to market teachers to schools efficiently. Parts of this project are based on [CamelCode](https://github.com/analytically/camelcode).
 
-### License
+#### License
 
 Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
