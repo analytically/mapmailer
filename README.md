@@ -5,17 +5,18 @@ Email CRM contacts by drawing (polygon and circle) an area on a map. Built using
 Follow [@analytically](http://twitter.com/analytically) for updates.
 
 ![screenshot](screenshot.png)
+![screenshot2](screenshot2.png)
 
 Works with:
   - [Capsule CRM](http://www.capsulecrm.com/)
 
-### Requirements
+#### Requirements
 
 - Java 6 or later
-- [Play Framework 2.2.1](http://www.playframework.org)
+- [Play Framework 2.2.2](http://www.playframework.org)
 - [MongoDB](http://www.mongodb.org)
 
-### Setup
+#### Setup
 
 Edit `conf/application.conf` and point it to a MongoDB installation (defaults to `localhost:27017`), add CRM details, and execute
 
@@ -30,7 +31,7 @@ After each file is imported, it will be moved to the `codepointopen/done` direct
 
 Then visit [http://localhost:9000](http://localhost:9000) and you should see the welcome screen.
 
-### Technology
+#### Technology
 
 * [Play Framework 2.2.1](http://www.playframework.org), as web framework
 * [Apache Camel](http://camel.apache.org) to [process and monitor](https://github.com/analytically/mapmailer/blob/master/app/Global.scala#L34) the `codepointopen` directory and to tell the actors about the postcodes
@@ -39,7 +40,8 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 * [ReactiveMongo](http://reactivemongo.org/) is a scala MongoDB driver that provides fully non-blocking and asynchronous I/O operations
 * [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
 * [Leaflet](http://leafletjs.com/) for the map
-* [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/) for the UI
+* [Leaflet Draw](https://github.com/Leaflet/Leaflet.draw)
+* [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/)
 
 ### Background and usecase
 
