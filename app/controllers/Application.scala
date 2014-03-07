@@ -2,7 +2,6 @@ package controllers
 
 import play.api.mvc._
 import play.modules.reactivemongo.MongoController
-import com.typesafe.plugin._
 
 import reactivemongo.bson._
 import models._
@@ -90,19 +89,6 @@ object Application extends Controller with MongoController {
           parties =>
             Ok(Json.toJson(parties))
         }
-    }
-  }
-
-  def email = rateLimited {
-    Action.async(parse.json) {
-      request =>
-
-        val mail = use[MailerPlugin].email
-        mail.setSubject("mailer")
-        mail.setRecipient("Peter Hausel Junior <noreply@email.com>", "example@foo.com")
-        mail.send("hello")
-
-        Future.successful(Created)
     }
   }
 }

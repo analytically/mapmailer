@@ -31,12 +31,6 @@ libraryDependencies += "org.geotools" % "gt-main" % "10.5" excludeAll ExclusionR
 
 libraryDependencies += "org.geotools" % "gt-epsg-hsql" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
 
-libraryDependencies += "org.apache.commons" % "commons-email" % "1.3.2"
-
-libraryDependencies += "com.typesafe" % "play-plugins-util_2.10" % "2.2.0" notTransitive()
-
-libraryDependencies += "com.typesafe" % "play-plugins-mailer_2.10" % "2.2.0" notTransitive()
-
 play.Project.playScalaSettings
 
 libraryDependencies ~= { _ map {

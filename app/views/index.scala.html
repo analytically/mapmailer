@@ -4,14 +4,17 @@
 <script type="text/javascript" language="javascript" src="/assets/javascripts/purl.js"></script>
 
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-<script type="text/javascript" language="javascript" src="//cdn.jsdelivr.net/chosen/1.1.0/chosen.jquery.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
+<script type="text/javascript" language="javascript" src="/assets/javascripts/selectize.js"></script>
 
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
 <script type="text/javascript">
     function init() {
+        var REGEX_EMAIL = '([a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*@@' +
+                '(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)';
+
         jQuery.extend({
             postJSON: function (url, data, callback) {
                 return jQuery.ajax({
@@ -25,7 +28,6 @@
                 });
             }
         });
-    $('.leaflet-control-layers').css('max-height',$(window).height());
 
         Handlebars.registerHelper('join', function(items, block) {
             var delimiter = block.hash.delimiter || ", ",
@@ -78,18 +80,19 @@
         L.control.layers({}, overlays).addTo(map);
 
         var popupOptions = {minWidth: 260, maxWidth: 300};
-        var markers = [];
+        var organisationMarkers = [];
+        var personMarkers = [];
 
         var layerTemplate = Handlebars.compile($("#area-popup").html());
         var organisationPopupTemplate = Handlebars.compile($("#organisation-popup").html());
         var personPopupTemplate = Handlebars.compile($("#person-popup").html());
 
-        var handle = function(party) {
+        var createMarkerAndAddToLayer = function(party) {
             if (party.organisation) {
                 var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
                 var marker = L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon});
-                if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
-                    markers.push(marker.getLatLng());
+                if ($.grep(organisationMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
+                    organisationMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(organisationPopupTemplate(party)));
                     $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
                 }
@@ -98,8 +101,8 @@
             else {
                 var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
                 var marker = L.marker([party.location.latitude, party.location.longitude], {icon: personIcon});
-                if ($.grep(markers, function(e){ return e.equals(marker.getLatLng()); }) == 0) {
-                    markers.push(marker.getLatLng());
+                if ($.grep(personMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
+                    personMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(personPopupTemplate(party)));
                     $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
                 }
@@ -109,10 +112,10 @@
 
         if ($.url().param('partyId')) {
             $.getJSON('/party/' + $.url().param('partyId'), function(party) {
-                map.setZoom(13);
+                map.setZoom(14);
                 map.panTo(new L.LatLng(party.location.latitude, party.location.longitude));
                 var icon = L.AwesomeMarkers.icon({icon : 'fa-bullseye', markerColor : 'red', prefix: 'fa'});
-                handle(party).setIcon(icon).addTo(map).openPopup();
+                createMarkerAndAddToLayer(party).setIcon(icon).addTo(map).openPopup();
             })
             .fail(function () {
                 alert("Can't find party with id " + $.url().param('partyId'))
@@ -153,7 +156,11 @@
         map.addControl(drawControl);
 
         map.on('popupopen', function() {
-            $('#myModal').modal()
+            $('#to').selectize({
+                plugins: ['remove_button'],
+                persist: false,
+                openOnFocus: false
+            });
         });
 
         map.on('draw:created', function (e) {
@@ -162,10 +169,38 @@
             if (type === 'polygon' || type === 'circle') {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
                     $.each(data, function(i, party) {
-                        handle(party);
+                        createMarkerAndAddToLayer(party);
                     });
 
-                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data)));
+                    var partyGroupFilter = function(party) {
+                        layerCurrentlyAddedToMap = false;
+                        $.each(party.groups, function(i, group) {
+                            if (eval("map.hasLayer(" + group + "Group)")) {
+                                layerCurrentlyAddedToMap = true;
+                            }
+                        });
+                        return layerCurrentlyAddedToMap;
+                    };
+
+                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
+
+                    data.filter(function(party) {
+                        $.each(party.groups, function(i, group) {
+                            map.on('overlayadd', function(e) {
+                                if (layer !== undefined) {
+                                    layer.unbindPopup();
+                                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
+                                }
+                            });
+
+                            map.on('overlayremove', function(e) {
+                                if (layer !== undefined) {
+                                    layer.unbindPopup();
+                                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
+                                }
+                            });
+                        });
+                    });
 
                     drawnItems.addLayer(layer);
                 }, 'json');
@@ -209,26 +244,25 @@
 </script>
 
 <script id="area-popup" type="text/x-handlebars-template">
-    Found {{ this.length }} parties. <button class="btn btn-primary" data-toggle="modal"><i class="fa fa-envelope-o"></i></button>
-
+    Found {{ this.length }} parties. <button class="btn btn-primary" onclick="$('#myModal').appendTo('body').modal('show'); return false;"><i class="fa fa-envelope-o"></i></button>
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                    <h4 class="modal-title" id="myModalLabel">Email parties</h4>
                 </div>
                 <div class="modal-body">
-                    <select class="chosen-select form-control" data-placeholder="Select categories to email..." name="categories" style="width:350px;" multiple>
+                    <select id="to" class="email form-control" name="to" multiple>
                         <option value=""></option>
                         {{#each this}}
-                        <option>{{this.name}}</option>
+                        <option value="{{this.emailAddress}}" selected>{{this.name}} ({{ join groups }})</option>
                         {{/each}}
                     </select>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-primary">Email</button>
                 </div>
             </div>
         </div>
