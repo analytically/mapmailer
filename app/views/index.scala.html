@@ -12,7 +12,7 @@
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.draw.js"></script>
 <script type="text/javascript" language="javascript" src="/assets/javascripts/leaflet.awesome-markers.js"></script>
 <script type="text/javascript">
-    function init() {
+    $(function() {
         Swag.registerHelpers(Handlebars);
 
         jQuery.extend({
@@ -219,7 +219,7 @@
                 createMarkerAndAddToLayer(party).setIcon(icon).addTo(map).openPopup();
             }).fail(function () { alert("Can't find contact with id " + $.url().param('partyId')) });
         }
-    }
+    });
 </script>
 
 <script id="person-popup" type="text/x-handlebars-template">
@@ -275,7 +275,7 @@
     {{/if}}
 </script>
 
-<body onLoad="javascript:init();">
+<body>
     <div id="map"></div>
 </body>
 }
