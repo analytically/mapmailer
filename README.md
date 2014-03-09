@@ -55,6 +55,7 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 * [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
 * [Leaflet](http://leafletjs.com/) for the map
 * [Leaflet Draw](https://github.com/Leaflet/Leaflet.draw)
+* [Thunderforest](http://www.thunderforest.com/) transport map
 * [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/)
 
 #### Background and usecase
