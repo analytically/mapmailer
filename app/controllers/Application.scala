@@ -24,13 +24,15 @@ import play.Play
 object Application extends Controller with MongoController {
   def partyCollection: BSONCollection = db.collection[BSONCollection]("parties")
 
+  val config = play.api.Play.configuration
+  val ratelimit = config.getInt("ratelimit").getOrElse(5)
   implicit val locationWites = Json.writes[Location]
   implicit val partyWrites = Json.writes[Party]
 
   val rateLimiters = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build(
     new CacheLoader[String, RateLimiter] {
       def load(key: String) = {
-        RateLimiter.create(5)
+        RateLimiter.create(ratelimit)
       }
     })
 
@@ -39,8 +41,8 @@ object Application extends Controller with MongoController {
       if (rateLimiters.get(request.remoteAddress).tryAcquire())
         action(request)
       else {
-        Logger.warn(s"Rate limit of 5 requests/second exceeded by ${request.remoteAddress}, responding with status '429 Too Many Requests'")
-        Future.successful(TooManyRequest("Rate limit of 5 requests/second exceeded"))
+        Logger.warn(s"Rate limit of $ratelimit requests/second exceeded by ${request.remoteAddress}, responding with status '429 Too Many Requests'")
+        Future.successful(TooManyRequest("Rate limit of $ratelimit requests/second exceeded"))
       }
   }
 
