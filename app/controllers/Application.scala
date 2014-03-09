@@ -42,7 +42,7 @@ object Application extends Controller with MongoController {
         action(request)
       else {
         Logger.warn(s"Rate limit of $ratelimit requests/second exceeded by ${request.remoteAddress}, responding with status '429 Too Many Requests'")
-        Future.successful(TooManyRequest("Rate limit of $ratelimit requests/second exceeded"))
+        Future.successful(TooManyRequest(s"Rate limit of $ratelimit requests/second exceeded"))
       }
   }
 
