@@ -217,7 +217,7 @@
                 map.setZoom(11);
                 var icon = L.AwesomeMarkers.icon({icon: 'fa-bullseye', markerColor: 'red', prefix: 'fa'});
                 createMarkerAndAddToLayer(party).setIcon(icon).addTo(map).openPopup();
-            }).fail(function () { alert("Can't find party with id " + $.url().param('partyId')) });
+            }).fail(function () { alert("Can't find contact with id " + $.url().param('partyId')) });
         }
     }
 </script>
@@ -237,14 +237,14 @@
 
 <script id="area-popup" type="text/x-handlebars-template">
     {{#if this}}
-    Found <strong>{{ this.length }}</strong> parties.&nbsp;&nbsp;&nbsp;
+    Found <strong>{{ this.length }}</strong> contacts.&nbsp;&nbsp;&nbsp;
     <a href="#" title="Email" class="btn btn-default btn-xs" onclick="$('#myModal').appendTo('body').modal('show'); return false;"><i class="fa fa-envelope-o fa-lg"></i></a>
     <div class="modal fade" style="display:none;" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="myModalLabel">Email parties</h4>
+                    <h4 class="modal-title" id="myModalLabel">Email contacts</h4>
                 </div>
                 <div class="modal-body">
                     <select id="to" class="form-control" name="to" multiple>
@@ -271,7 +271,7 @@
         </div>
     </div>
     {{else}}
-    No parties found for selected groups.
+    No contacts found for selected groups.
     {{/if}}
 </script>
 
