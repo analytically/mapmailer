@@ -35,13 +35,13 @@ for more configurable options.
 Copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
 files to the `codepointopen` directory in the same directory with the downloaded jar.
 
-The start the application:
+Start the application:
 
 ```
 java -Dcapsulecrm.url=https://example.capsulecrm.com -Dcapsulecrm.token=abcdef123456789 -jar mapmailer.jar
 ```
 
-After all CodePoint Open files are imported, they are moved to the `codepointopen/done` directory.
+After all CodePoint Open files are imported and processed, they are moved to the `codepointopen/done` directory.
 
 Then visit [http://localhost:9000](http://localhost:9000) and you should see the map.
 
