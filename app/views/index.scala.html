@@ -238,17 +238,16 @@
 <script id="area-popup" type="text/x-handlebars-template">
     {{#if this}}
     Found <strong>{{ this.length }}</strong> contacts.&nbsp;&nbsp;&nbsp;
-    <a href="#" title="Email" class="btn btn-default btn-xs" onclick="$('#myModal').appendTo('body').modal('show'); return false;"><i class="fa fa-envelope-o fa-lg"></i></a>
-    <div class="modal fade" style="display:none;" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <a href="#" title="Email" class="btn btn-default btn-xs" onclick="$('#emailModal').appendTo('body').modal('show'); return false;"><i class="fa fa-envelope-o fa-lg"></i></a>
+    <div class="modal fade" id="emailModal" tabindex="-1" role="dialog" aria-labelledby="emailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="myModalLabel">Email contacts</h4>
+                    <h4 class="modal-title">Email contacts</h4>
                 </div>
                 <div class="modal-body">
                     <select id="to" class="form-control" name="to" multiple>
-                        <option value=""></option>
                         {{#each this}}
                         <option value="{{this.emailAddress}}" selected>{{this.name}}</option>
                         {{/each}}
@@ -258,6 +257,7 @@
                     <a href="#" class="btn btn-default" data-dismiss="modal">Close</a>
                     {{#slice this 40}}
                         <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" target="_blank">
+                            <i class="fa fa-envelope-o fa-fw"></i>
                             {{#gt ../this.length 40}}
                             Email {{index}}
                             {{else}}

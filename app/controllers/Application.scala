@@ -20,14 +20,16 @@ import java.util.concurrent.TimeUnit
 import com.google.common.util.concurrent.RateLimiter
 import play.api.Logger
 import play.Play
+import play.api.cache.Cached
 
 object Application extends Controller with MongoController {
-  def partyCollection: BSONCollection = db.collection[BSONCollection]("parties")
+  val partyCollection = db.collection[BSONCollection]("parties")
 
-  val config = play.api.Play.configuration
-  val ratelimit = config.getInt("ratelimit").getOrElse(5)
   implicit val locationWites = Json.writes[Location]
   implicit val partyWrites = Json.writes[Party]
+
+  val config = play.api.Play.configuration
+  val ratelimit = config.getInt("ratelimit").getOrElse(3)
 
   val rateLimiters = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build(
     new CacheLoader[String, RateLimiter] {
@@ -50,18 +52,22 @@ object Application extends Controller with MongoController {
     Ok("pong")
   }
 
-  def index = Action.async {
-    db.command(Distinct("parties", "grps")).map {
-      groups =>
-        Ok(views.html.index(groups.sorted, Location(-2, 53)))
+  def index = Cached("index", 3600) {
+    Action.async {
+      db.command(Distinct("parties", "grps")).map {
+        groups =>
+          Ok(views.html.index(groups.sorted, Location(-2, 53)))
+      }
     }
   }
 
-  def party(partyId: String) = rateLimited {
-    Action.async {
-      partyCollection.find(BSONDocument("cid" -> partyId)).one[Party].map {
-        case Some(party) => Ok(Json.toJson(party))
-        case None => NotFound("not found")
+  def party(partyId: String) = Cached("party" + partyId, 3600) {
+    rateLimited {
+      Action.async {
+        partyCollection.find(BSONDocument("cid" -> partyId)).one[Party].map {
+          case Some(party) => Ok(Json.toJson(party))
+          case None => NotFound("not found")
+        }
       }
     }
   }
@@ -87,7 +93,7 @@ object Application extends Controller with MongoController {
           case _ => ???
         }
 
-        parties.collect[List](upTo = 300).map {
+        parties.collect[List](upTo = 500).map {
           parties =>
             Ok(Json.toJson(parties))
         }

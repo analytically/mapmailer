@@ -8,6 +8,7 @@ resolvers += "Open Source Geospatial Foundation Repository" at "http://download.
 
 libraryDependencies ++= Seq(
   javaCore,
+  cache,
   filters
 )
 
