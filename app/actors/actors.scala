@@ -21,41 +21,22 @@ trait MongoActor extends Actor {
 }
 
 class ProcessCPOCsvEntry extends MongoActor with ActorLogging {
-  def pcuCollection: BSONCollection = db.collection[BSONCollection]("pcu")
+  val pcuCollection = db.collection[BSONCollection]("pcu")
 
   import context.dispatcher
 
-  val osgbToWgs84Transform = {
-    try {
-      val osgbCrs: CoordinateReferenceSystem = CRS.decode("EPSG:27700")
-      val wgs84crs: CoordinateReferenceSystem = DefaultGeographicCRS.WGS84
-      CRS.findMathTransform(osgbCrs, wgs84crs)
-    }
-    catch {
-      case e: FactoryException => {
-        throw Throwables.propagate(e)
-      }
-    }
-  }
+  val osgbToWgs84Transform = CRS.findMathTransform(CRS.decode("EPSG:27700"), DefaultGeographicCRS.WGS84)
 
   def receive = {
     case entry: CodePointOpenCsvEntry =>
-      val eastings: Int = Integer.parseInt(entry.eastings)
-      val northings: Int = Integer.parseInt(entry.northings)
-      val eastNorth: DirectPosition = new GeneralDirectPosition(eastings, northings)
-      val latLng: DirectPosition = osgbToWgs84Transform.transform(eastNorth, eastNorth)
+      val eastNorth = new GeneralDirectPosition(entry.eastings.toInt, entry.northings.toInt)
+      val latLng = osgbToWgs84Transform.transform(eastNorth, eastNorth)
 
-      val postcodeUnit = PostcodeUnit(CharMatcher.WHITESPACE.removeFrom(entry.postcode).toUpperCase,
+      pcuCollection.insert(PostcodeUnit(CharMatcher.WHITESPACE.removeFrom(entry.postcode).toUpperCase,
         entry.positionalQualityIndicator,
-        new Location(round(latLng.getOrdinate(0), 8), round(latLng.getOrdinate(1), 8))
-      )
-
-      pcuCollection.insert(postcodeUnit)
+        new Location(truncateAt(latLng.getOrdinate(0), 8), truncateAt(latLng.getOrdinate(1), 8))
+      ))
   }
 
-  def round(valueToRound: Double, numberOfDecimalPlaces: Int): Double = {
-    val multipicationFactor: Double = Math.pow(10, numberOfDecimalPlaces)
-    val interestedInZeroDPs: Double = valueToRound * multipicationFactor
-    Math.round(interestedInZeroDPs) / multipicationFactor
-  }
+  def truncateAt(n: Double, p: Int): Double = { val s = math pow (10, p); (math floor n * s) / s }
 }
