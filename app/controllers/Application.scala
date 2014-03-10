@@ -93,7 +93,7 @@ object Application extends Controller with MongoController {
           case _ => ???
         }
 
-        parties.collect[List](upTo = 500).map {
+        parties.collect[List]().map {
           parties =>
             Ok(Json.toJson(parties))
         }
