@@ -12,7 +12,7 @@ Works with:
 
 #### Requirements
 
-Java 6 or later. [MongoDB](http://www.mongodb.org) at localhost:27017. A Capsule CRM account and token.
+[Java 7](http://java.com/en/download/index.jsp) or later. [MongoDB](http://www.mongodb.org) at localhost:27017. A Capsule CRM account and token.
 
 #### Building (optional)
 
@@ -28,9 +28,8 @@ This builds a single, executable 'fat' jar in `target/scala-2.10`.
 
 Prebuilt releases are available [here](https://github.com/analytically/mapmailer/releases).
 
-Requires [Java 7](http://java.com/en/download/index.jsp). Capsule CRM users can find their API token by visiting
-`My Preferences` via their username menu in the Capsule navigation bar. See [application.conf](conf/application.conf)
-for more configurable options.
+Capsule CRM users can find their API token by visiting `My Preferences` via their username menu in the Capsule navigation bar.
+See [application.conf](conf/application.conf) for more configurable options.
 
 Copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
 files to the `codepointopen` directory in the same directory with the downloaded jar.
