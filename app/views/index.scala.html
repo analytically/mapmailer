@@ -256,7 +256,7 @@
                 <div class="modal-footer">
                     <a href="#" class="btn btn-default" data-dismiss="modal">Close</a>
                     {{#slice this 40}}
-                        <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" target="_blank">
+                        <a href="mailto:?bcc={{#each this}}{{this.emailAddress}},{{/each}}" class="email btn btn-primary" onclick="$(this).toggleClass('btn-primary btn-default');" target="_blank">
                             <i class="fa fa-envelope-o fa-fw"></i>
                             {{#gt ../this.length 40}}
                             Email {{index}}
