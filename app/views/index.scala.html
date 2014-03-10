@@ -229,7 +229,7 @@
 </script>
 
 <script id="organisation-popup" type="text/x-handlebars-template">
-    <strong><span title="{{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
+    <strong><span title="{{ join groups ', '}} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
     <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in Capsule CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
     <a href="{{ website }}" target="_blank" title="Open {{ website }}" class="btn btn-default btn-xs"><i class="fa fa-external-link fa-lg"></i></a>
