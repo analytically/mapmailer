@@ -1,25 +1,20 @@
-net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 name := "mapmailer"
 
 version := "1.0-SNAPSHOT"
 
-resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+play.Project.playScalaSettings
+
+net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 resolvers += "Open Source Geospatial Foundation Repository" at "http://download.osgeo.org/webdav/geotools/"
-
-play.Project.playScalaSettings
 
 libraryDependencies ++= Seq(
   cache,
   filters
 )
 
-libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.2.2" intransitive()
-
-libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
-
-libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.0-rc1"
+libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2"
 
 libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.2.3"
 
