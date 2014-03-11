@@ -1,3 +1,5 @@
+net.virtualvoid.sbt.graph.Plugin.graphSettings
+
 name := "mapmailer"
 
 version := "1.0-SNAPSHOT"
@@ -12,6 +14,8 @@ libraryDependencies ++= Seq(
   cache,
   filters
 )
+
+libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.2.2" intransitive()
 
 libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
 
@@ -28,7 +32,6 @@ libraryDependencies += "org.apache.camel" % "camel-bindy" % "2.11.4"
 libraryDependencies += "org.geotools" % "gt-main" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
 
 libraryDependencies += "org.geotools" % "gt-epsg-hsql" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
-
 
 libraryDependencies ~= { _ map {
   case m if m.organization == "org.apache.httpcomponents" =>
