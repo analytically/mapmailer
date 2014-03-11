@@ -7,7 +7,8 @@ import models.csv.CodePointOpenCsvEntry
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.dataformat.BindyType
-import org.apache.camel.{Exchange, Processor}
+import org.apache.camel.{FailedToStartRouteException, Exchange, Processor}
+import org.joda.time.DateTime
 import play.api._
 import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
@@ -26,6 +27,7 @@ import play.api.Play.current
 import ExecutionContext.Implicits.global
 import scala.util.control.Exception._
 import play.modules.reactivemongo.json.BSONFormats._
+import scala.concurrent.duration._
 
 object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
   val camelContext = new DefaultCamelContext()
@@ -48,81 +50,94 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       }
     })
 
-    camelContext.start()
+    try {
+      camelContext.start()
+    } catch {
+      case e: FailedToStartRouteException => Logger.warn(e.getMessage)
+    }
 
-    def postcodeUnitCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
-    postcodeUnitCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
+    val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
+    val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
 
-    def partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+    pcuCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
     partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) =>
-        val groupsToIgnore = app.configuration.getStringList("groups.ignore").get
-        val skipImport = app.configuration.getStringList("groups.skipImport").get
-        val groupsToCollapseIfContains = app.configuration.getStringList("groups.collapseIfContains").get
-
-        CParty.listAll().get().foreach {
-          party =>
-            if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
-              Futures.addCallback(JdkFutureAdapters.listenInPoolThread(party.listTags()), new FutureCallback[CTags] {
-                override def onSuccess(ctags: CTags) = {
-                  val tags = allCatch.opt(ctags.tags.map(_.name).toList).getOrElse(Nil)
-
-                  val groups = if (party.isInstanceOf[COrganisation]) {
-                    tags
-                  } else {
-                    val jobTitleGroups = allCatch.opt(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings()
-                      .split(party.asInstanceOf[CPerson].jobTitle).toList.filter(_.length > 1)).getOrElse(Nil)
-
-                    jobTitleGroups ::: tags
-                  }
-                    .diff(groupsToIgnore)
-                    .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
-                    .distinct
-
-                  if (!groups.exists(skipImport.toSet)) {
-                    val postcode = CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase
-                    val groupsToSave = dedupe(groups.diff(skipImport), (a:String, b:String) => a.toLowerCase == b.toLowerCase).map(CharMatcher.JAVA_LETTER.retainFrom(_)).map(_.capitalize)
-
-                    postcodeUnitCollection.find(BSONDocument("pc" -> postcode)).one[PostcodeUnit].map {
-                      case Some(postcodeUnit) =>
-                        partyCollection.find(BSONDocument("cid" -> party.id.toString)).one[Party].map {
-                          case Some(existingParty) =>
-                            partyCollection.insert(existingParty.copy(
-                              party.id.toString,
-                              party.getName,
-                              party.firstEmail().emailAddress,
-                              if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                              party.firstAddress().zip.toUpperCase,
-                              party.isInstanceOf[COrganisation],
-                              postcodeUnit.location,
-                              groupsToSave
-                            ))
-
-                          case None =>
-                            partyCollection.insert(Party(
-                              party.id.toString,
-                              party.getName,
-                              party.firstEmail().emailAddress,
-                              if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                              party.firstAddress().zip.toUpperCase,
-                              party.isInstanceOf[COrganisation],
-                              postcodeUnit.location,
-                              groupsToSave
-                            ))
-                        }
-
-                      case None => Logger.info(s"Unable to find location for party ${party.getName} with postcode ${postcode}")
-                    }
-                  }
-                }
-
-                override def onFailure(failure: Throwable) = Logger.error(failure.getMessage, failure)
-              })
-            }
+        importParties(pcuCollection, partyCollection, CParty.listAll().get())
+        Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
+          importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
         }
       case _ =>
+    }
+  }
+
+  def importParties(pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
+    val groupsToIgnore = configuration.getStringList("groups.ignore").get
+    val skipImport = configuration.getStringList("groups.skipImport").get
+    val groupsToCollapseIfContains = configuration.getStringList("groups.collapseIfContains").get
+
+    parties.foreach {
+      party =>
+        if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
+          Futures.addCallback(JdkFutureAdapters.listenInPoolThread(party.listTags()), new FutureCallback[CTags] {
+            override def onSuccess(ctags: CTags) = {
+              val tags = allCatch.opt(ctags.tags.map(_.name).toList).getOrElse(Nil)
+
+              val groups = if (party.isInstanceOf[COrganisation]) {
+                tags
+              } else {
+                val jobTitleGroups = allCatch.opt(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings()
+                  .split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)
+
+                jobTitleGroups ::: tags
+              }
+                .diff(groupsToIgnore)
+                .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
+                .distinct
+
+              if (!groups.exists(skipImport.toSet)) {
+                val postcode = CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase
+                val groupsToSave = dedupe(groups.diff(skipImport), (a:String, b:String) => a.toLowerCase == b.toLowerCase).map(CharMatcher.JAVA_LETTER.retainFrom(_))
+                  .filter(_.length > 1)
+                  .map(_.capitalize)
+
+                pcuCollection.find(BSONDocument("pc" -> postcode)).one[PostcodeUnit].map {
+                  case Some(postcodeUnit) =>
+                    partyCollection.find(BSONDocument("cid" -> party.id.toString)).one[Party].map {
+                      case Some(existingParty) =>
+                        partyCollection.insert(existingParty.copy(
+                          party.id.toString,
+                          party.getName,
+                          party.firstEmail().emailAddress,
+                          if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
+                          party.firstAddress().zip.toUpperCase,
+                          party.isInstanceOf[COrganisation],
+                          postcodeUnit.location,
+                          groupsToSave
+                        ))
+
+                      case None =>
+                        partyCollection.insert(Party(
+                          party.id.toString,
+                          party.getName,
+                          party.firstEmail().emailAddress,
+                          if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
+                          party.firstAddress().zip.toUpperCase,
+                          party.isInstanceOf[COrganisation],
+                          postcodeUnit.location,
+                          groupsToSave
+                        ))
+                    }
+
+                  case None => Logger.info(s"Unable to find location for party ${party.getName} with postcode ${postcode}")
+                }
+              }
+            }
+
+            override def onFailure(failure: Throwable) = Logger.error(failure.getMessage, failure)
+          })
+        }
     }
   }
 

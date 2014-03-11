@@ -19,22 +19,18 @@ import com.google.common.cache.{CacheLoader, CacheBuilder}
 import java.util.concurrent.TimeUnit
 import com.google.common.util.concurrent.RateLimiter
 import play.api.Logger
-import play.Play
+import play.api.Play._
 import play.api.cache.Cached
+import scala.util.{Failure, Success, Try}
 
 object Application extends Controller with MongoController {
-  val partyCollection = db.collection[BSONCollection]("parties")
-
   implicit val locationWites = Json.writes[Location]
   implicit val partyWrites = Json.writes[Party]
 
-  val config = play.api.Play.configuration
-  val ratelimit = config.getInt("ratelimit").getOrElse(3)
-
-  val rateLimiters = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build(
+  lazy val rateLimiters = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build(
     new CacheLoader[String, RateLimiter] {
       def load(key: String) = {
-        RateLimiter.create(ratelimit)
+        RateLimiter.create(configuration.getInt("ratelimit").getOrElse(3).toDouble)
       }
     })
 
@@ -43,6 +39,7 @@ object Application extends Controller with MongoController {
       if (rateLimiters.get(request.remoteAddress).tryAcquire())
         action(request)
       else {
+        val ratelimit = configuration.getInt("ratelimit").getOrElse(3)
         Logger.warn(s"Rate limit of $ratelimit requests/second exceeded by ${request.remoteAddress}, responding with status '429 Too Many Requests'")
         Future.successful(TooManyRequest(s"Rate limit of $ratelimit requests/second exceeded"))
       }
@@ -61,10 +58,10 @@ object Application extends Controller with MongoController {
     }
   }
 
-  def party(partyId: String) = Cached("party" + partyId, 3600) {
+  def party(partyId: String) = Cached("party-" + partyId, 3600) {
     rateLimited {
       Action.async {
-        partyCollection.find(BSONDocument("cid" -> partyId)).one[Party].map {
+        db.collection[BSONCollection]("parties").find(BSONDocument("cid" -> partyId)).one[Party].map {
           case Some(party) => Ok(Json.toJson(party))
           case None => NotFound("not found")
         }
@@ -75,27 +72,27 @@ object Application extends Controller with MongoController {
   def search = rateLimited {
     Action.async(parse.json) {
       request =>
-        val parties = (request.body \ "geometry" \ "type").as[String].toLowerCase match {
+        val partyCollection = db.collection[BSONCollection]("parties")
+
+        Try((request.body \ "geometry" \ "type").as[String].toLowerCase match {
           case "circle" =>
             val coordinates = (request.body \ "geometry" \ "coordinates").as[Array[Double]]
 
             partyCollection.find(BSONDocument("loc" ->
               BSONDocument("$geoWithin" -> BSONDocument("$centerSphere" -> BSONArray(coordinates, (request.body \ "geometry" \ "radius").as[Double] / 1609.34 / 3959)))))
-              .cursor[Party]
+              .cursor[Party].collect[List]()
 
           case "polygon" =>
             val coordinates = (request.body \ "geometry" \ "coordinates").as[Array[Array[Array[Double]]]].flatten.map(coordinate => BSONArray(coordinate.head, coordinate.tail.head))
 
             partyCollection.find(BSONDocument("loc" ->
               BSONDocument("$geoWithin" -> BSONDocument("$geometry" -> BSONDocument("type" -> "Polygon", "coordinates" -> BSONArray(BSONArray(coordinates)))))))
-              .cursor[Party]
-
-          case _ => ???
-        }
-
-        parties.collect[List]().map {
-          parties =>
-            Ok(Json.toJson(parties))
+              .cursor[Party].collect[List]()
+        }) match {
+          case Success(v) => v.map {
+            parties => Ok(Json.toJson(parties))
+          }
+          case Failure(e) => Future.successful(BadRequest)
         }
     }
   }

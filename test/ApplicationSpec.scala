@@ -1,30 +1,129 @@
+import models.{Location, Party}
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
 
+import org.specs2.time.NoTimeConversions
 import play.api.test._
 import play.api.test.Helpers._
+import play.api.libs.json._
+import play.modules.reactivemongo.ReactiveMongoPlugin
+import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.bson.BSONDocument
+import scala.concurrent._
+import scala.concurrent.duration._
 
-/**
- * Add your spec here.
- * You can mock out a whole application including requests, plugins etc.
- * For more information, consult the wiki.
- */
 @RunWith(classOf[JUnitRunner])
-class ApplicationSpec extends Specification {
+class ApplicationSpec extends Specification with NoTimeConversions {
 
-  "Application" should {
+  def testConfig: Map[String, _] = {
+    Map(
+      "mongodb.uri" -> ("mongodb://localhost:27017/mapmailer-test"),
+      "ratelimit" -> 100
+    )
+  }
 
-    "send 404 on a bad request" in new WithApplication{
+  "MapMailer application" should {
+    "send 404 on a bad request" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
       route(FakeRequest(GET, "/boum")) must beNone
     }
 
-    "render the index page" in new WithApplication{
-      val home = route(FakeRequest(GET, "/")).get
+    "render the index page" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest(GET, "/")).get
 
-      status(home) must equalTo(OK)
-      contentType(home) must beSome.which(_ == "text/html")
-      contentAsString(home) must contain ("Your new application is ready.")
+      status(request) must equalTo(OK)
+      contentType(request) must beSome.which(_ == "text/html")
+      contentAsString(request) must contain("MapMailer")
     }
+
+    "get party with invalid num id" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest(GET, "/party/123456789")).get
+      status(request) must equalTo(NOT_FOUND)
+    }
+
+    "get party with invalid alphanum id" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest(GET, "/party/abc123")).get
+      status(request) must equalTo(NOT_FOUND)
+    }
+
+    "search with invalid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.obj(
+        "blah" -> 98
+      ))).get
+
+      status(request) must equalTo(BAD_REQUEST)
+    }
+
+    "search with valid json but invalid type" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.obj(
+        "geometry" -> Json.obj(
+          "type" -> "blah"
+        )
+      ))).get
+
+      status(request) must equalTo(BAD_REQUEST)
+    }
+
+    "search with valid json but invalid content" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      val request = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.obj(
+        "geometry" -> Json.obj(
+          "type" -> "circle",
+          "coordinates" -> "blah"
+        )
+      ))).get
+
+      status(request) must equalTo(BAD_REQUEST)
+    }
+
+    "search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      import ExecutionContext.Implicits.global
+
+      val partyCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+      Await.result(partyCollection.insert(Party("12345678", "Some School", "mathias.bogaert@gmail.com", Some("http://www.coen.co.uk/"), "DY10 4PW",
+        true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
+
+      val inclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
+        """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
+      ))).get
+
+      status(inclusiveRequest) must equalTo(OK)
+      contentType(inclusiveRequest) must beSome.which(_ == "application/json")
+      contentAsString(inclusiveRequest) must contain("Some School")
+      contentAsString(inclusiveRequest) must contain("DY10 4PW")
+
+      val exclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
+        """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.2533203125,52.882305628707854],"radius":19643.358128558553}}"""
+      ))).get
+
+      status(exclusiveRequest) must equalTo(OK)
+      contentType(exclusiveRequest) must beSome.which(_ == "application/json")
+      contentAsString(exclusiveRequest) must contain("[]")
+
+      partyCollection.remove(BSONDocument("cid" -> "12345678"))
+    }
+
+    /*"import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      import ExecutionContext.Implicits.global
+
+      val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
+      val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+
+      pcuCollection.insert(BSONDocument("pc" -> "DY104PW", "loc" -> BSONDocument("lng" -> -2.18494136, "lat" -> 52.3621734)))
+
+      val corganisation = new COrganisation("Some School")
+      corganisation.addContact(new CEmail(null, "mathias.bogaert@gmail.com"))
+      corganisation.addContact(new CAddress(null, null, null, "DY10 4PW", null, null))
+
+      Global.importParties(pcuCollection, partyCollection, new CParties(1, List(corganisation), null))
+
+      val inclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
+        """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
+      ))).get
+
+      status(inclusiveRequest) must equalTo(OK)
+      contentType(inclusiveRequest) must beSome.which(_ == "application/json")
+      contentAsString(inclusiveRequest) must contain("Some School")
+      contentAsString(inclusiveRequest) must contain("DY10 4PW")
+    }*/
   }
 }

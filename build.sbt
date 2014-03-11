@@ -2,19 +2,16 @@ name := "mapmailer"
 
 version := "1.0-SNAPSHOT"
 
-resolvers += "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 resolvers += "Open Source Geospatial Foundation Repository" at "http://download.osgeo.org/webdav/geotools/"
 
+play.Project.playScalaSettings
+
 libraryDependencies ++= Seq(
-  javaCore,
   cache,
   filters
 )
-
-libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
-
-libraryDependencies += "com.google.code.findbugs" % "jsr305" % "2.0.3" // see http://stackoverflow.com/questions/10007994/why-do-i-need-jsr305-to-use-guava-in-scala
 
 libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
 
@@ -32,7 +29,6 @@ libraryDependencies += "org.geotools" % "gt-main" % "10.5" excludeAll ExclusionR
 
 libraryDependencies += "org.geotools" % "gt-epsg-hsql" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
 
-play.Project.playScalaSettings
 
 libraryDependencies ~= { _ map {
   case m if m.organization == "org.apache.httpcomponents" =>
