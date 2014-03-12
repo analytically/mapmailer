@@ -64,18 +64,18 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) =>
-        importParties(pcuCollection, partyCollection, CParty.listAll().get())
+        importParties(app, pcuCollection, partyCollection, CParty.listAll().get())
         Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
-          importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
+          importParties(app, pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
         }
       case _ =>
     }
   }
 
-  def importParties(pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
-    val groupsToIgnore = configuration.getStringList("groups.ignore").get
-    val skipImport = configuration.getStringList("groups.skipImport").get
-    val groupsToCollapseIfContains = configuration.getStringList("groups.collapseIfContains").get
+  def importParties(app: Application, pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
+    val groupsToIgnore = app.configuration.getStringList("groups.ignore").get
+    val skipImport = app.configuration.getStringList("groups.skipImport").get
+    val groupsToCollapseIfContains = app.configuration.getStringList("groups.collapseIfContains").get
 
     parties.foreach {
       party =>

@@ -14,7 +14,11 @@ libraryDependencies ++= Seq(
   filters
 )
 
-libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2"
+libraryDependencies += "com.google.code.findbugs" % "jsr305" % "2.0.3" // see http://stackoverflow.com/questions/10007994/why-do-i-need-jsr305-to-use-guava-in-scala
+
+libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
+
+libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.0-rc1"
 
 libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.2.3"
 
