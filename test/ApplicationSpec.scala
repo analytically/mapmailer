@@ -1,3 +1,6 @@
+import com.google.common.util.concurrent.Futures
+import java.util.concurrent
+import models.Location
 import models.{Location, Party}
 import org.specs2.mutable._
 import org.specs2.runner._
@@ -5,21 +8,27 @@ import org.junit.runner._
 
 import org.specs2.time.NoTimeConversions
 import play.api.test._
+import play.api.test.FakeApplication
 import play.api.test.Helpers._
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.bson.BSONDocument
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.Some
+import uk.co.coen.capsulecrm.client._
+import scala.collection.JavaConversions._
 
 @RunWith(classOf[JUnitRunner])
 class ApplicationSpec extends Specification with NoTimeConversions {
 
   def testConfig: Map[String, _] = {
     Map(
-      "mongodb.uri" -> ("mongodb://localhost:27017/mapmailer-test"),
-      "ratelimit" -> 100
+      "mongodb.uri" -> "mongodb://localhost:27017/mapmailer-test",
+      "ratelimit" -> 100,
+      "groups.ignore" -> List("ignore")
     )
   }
 
@@ -102,19 +111,27 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       partyCollection.remove(BSONDocument("cid" -> "12345678"))
     }
 
-    /*"import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+    "import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
       import ExecutionContext.Implicits.global
 
       val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
       val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
 
+      pcuCollection.insert(BSONDocument("pc" -> "SOMEWHEREELSE", "loc" -> BSONDocument("lng" -> -2.48494136, "lat" -> 52.9621734)))
       pcuCollection.insert(BSONDocument("pc" -> "DY104PW", "loc" -> BSONDocument("lng" -> -2.18494136, "lat" -> 52.3621734)))
 
-      val corganisation = new COrganisation("Some School")
-      corganisation.addContact(new CEmail(null, "mathias.bogaert@gmail.com"))
-      corganisation.addContact(new CAddress(null, null, null, "DY10 4PW", null, null))
+      val tags = new CTags()
+      tags.size = 1
+      tags.tags = List(new CTag("group1"), new CTag("group2"), new CTag("ignore"))
 
-      Global.importParties(pcuCollection, partyCollection, new CParties(1, List(corganisation), null))
+      val organisation = new COrganisation("Some School")
+      organisation.id = 12345678
+
+      organisation.addContact(new CEmail(null, "mathias.bogaert@gmail.com"))
+      val address = new CAddress(null, null, null, "DY10 4PW", null, null)
+      organisation.addContact(address)
+
+      Await.result(Global.importParty(pcuCollection, partyCollection, organisation, tags), 10 seconds)
 
       val inclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
         """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
@@ -124,6 +141,22 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       contentType(inclusiveRequest) must beSome.which(_ == "application/json")
       contentAsString(inclusiveRequest) must contain("Some School")
       contentAsString(inclusiveRequest) must contain("DY10 4PW")
-    }*/
+      contentAsString(inclusiveRequest) must contain("Group1")
+      contentAsString(inclusiveRequest) must contain("Group2")
+      contentAsString(inclusiveRequest) must not contain("ignore")
+
+      address.zip = "SOMEWHEREELSE"
+      Await.result(Global.importParty(pcuCollection, partyCollection, organisation, tags), 10 seconds)
+
+      val inclusiveRequestNotFound = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
+        """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
+      ))).get
+
+      status(inclusiveRequestNotFound) must equalTo(OK)
+      contentAsString(inclusiveRequestNotFound) must contain("[]")
+
+      partyCollection.remove(BSONDocument("cid" -> "12345678"))
+      pcuCollection.remove(BSONDocument("pc" -> "DY104PW"))
+    }
   }
 }

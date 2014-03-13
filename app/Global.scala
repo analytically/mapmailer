@@ -18,9 +18,10 @@ import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.api.indexes.IndexType.{Geo2D, Ascending}
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONDocument
+import reactivemongo.core.commands.LastError
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 import scala.Some
 import uk.co.coen.capsulecrm.client._
 import play.api.Play.current
@@ -62,77 +63,28 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     pcuCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
     partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
 
-    app.configuration.getString("capsulecrm.url") match {
-      case Some(url) =>
-        importParties(app, pcuCollection, partyCollection, CParty.listAll().get())
-        Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
-          importParties(app, pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
-        }
-      case _ =>
+    if (Play.isProd) {
+      app.configuration.getString("capsulecrm.url") match {
+        case Some(url) =>
+          importParties(pcuCollection, partyCollection, CParty.listAll().get())
+          Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
+            importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
+          }
+        case _ =>
+      }
     }
   }
 
-  def importParties(app: Application, pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
-    val groupsToIgnore = app.configuration.getStringList("groups.ignore").get
-    val skipImport = app.configuration.getStringList("groups.skipImport").get
-    val groupsToCollapseIfContains = app.configuration.getStringList("groups.collapseIfContains").get
+  def importParties(pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
+    val skipImport = Play.current.configuration.getStringList("groups.skipImport").get
 
-    parties.foreach {
+    parties.map {
       party =>
         if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
           Futures.addCallback(JdkFutureAdapters.listenInPoolThread(party.listTags()), new FutureCallback[CTags] {
-            override def onSuccess(ctags: CTags) = {
-              val tags = allCatch.opt(ctags.tags.map(_.name).toList).getOrElse(Nil)
-
-              val groups = if (party.isInstanceOf[COrganisation]) {
-                tags
-              } else {
-                val jobTitleGroups = allCatch.opt(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings()
-                  .split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)
-
-                jobTitleGroups ::: tags
-              }
-                .diff(groupsToIgnore)
-                .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
-                .distinct
-
-              if (!groups.exists(skipImport.toSet)) {
-                val postcode = CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase
-                val groupsToSave = dedupe(groups.diff(skipImport), (a:String, b:String) => a.toLowerCase == b.toLowerCase).map(CharMatcher.JAVA_LETTER.retainFrom(_))
-                  .filter(_.length > 1)
-                  .map(_.capitalize)
-
-                pcuCollection.find(BSONDocument("pc" -> postcode)).one[PostcodeUnit].map {
-                  case Some(postcodeUnit) =>
-                    partyCollection.find(BSONDocument("cid" -> party.id.toString)).one[Party].map {
-                      case Some(existingParty) =>
-                        partyCollection.insert(existingParty.copy(
-                          party.id.toString,
-                          party.getName,
-                          party.firstEmail().emailAddress,
-                          if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                          party.firstAddress().zip.toUpperCase,
-                          party.isInstanceOf[COrganisation],
-                          postcodeUnit.location,
-                          groupsToSave
-                        ))
-
-                      case None =>
-                        partyCollection.insert(Party(
-                          party.id.toString,
-                          party.getName,
-                          party.firstEmail().emailAddress,
-                          if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                          party.firstAddress().zip.toUpperCase,
-                          party.isInstanceOf[COrganisation],
-                          postcodeUnit.location,
-                          groupsToSave
-                        ))
-                    }
-
-                  case None => Logger.info(s"Unable to find location for party ${party.getName} with postcode ${postcode}")
-                }
-              }
+            override def onSuccess(tags: CTags) = {
+              if (!tags.tags.map(_.name).exists(skipImport.toSet))
+                importParty(pcuCollection, partyCollection, party, tags) // todo log failure
             }
 
             override def onFailure(failure: Throwable) = Logger.error(failure.getMessage, failure)
@@ -141,18 +93,52 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     }
   }
 
-  def dedupe[T](elements: List[T], predicate: (T, T) => Boolean = (a: T, b: T) => { a == b }): List[T] = {
-    @tailrec def recur(raw: List[T], deduped: List[T]): List[T] =
-      raw match {
-        case Nil => deduped // no more raw elements to process, just return the final deduped list
-        case head :: tail => recur(tail,
-          deduped.exists(predicate(_, head)) match {
-            case true => deduped  // element is in the list, just use the deduped list as-is
-            case false => head :: deduped // not in the list, so add it.
-          })
-      }
+  def importParty(pcuCollection: BSONCollection, partyCollection: BSONCollection, party: CParty, tags: CTags): Future[Either[String, Future[LastError]]] = {
+    val groupsToIgnore = Play.current.configuration.getStringList("groups.ignore").get
+    val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    recur(elements, Nil).reverse
+    val groups = (tags.tags.map(_.name).diff(groupsToIgnore) ++
+      (if (party.isInstanceOf[COrganisation]) Nil else Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList))
+      .map(_.capitalize)
+      .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
+      .filter(_.length > 1)
+      .distinct
+      .toList
+
+    pcuCollection.find(BSONDocument("pc" -> CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase)).one[PostcodeUnit].map {
+      case Some(postcodeUnit) =>
+        Right(partyCollection.find(BSONDocument("cid" -> party.id.toString)).one[Party].flatMap {
+          case Some(existingParty) =>
+            partyCollection.remove(existingParty).flatMap { _ =>
+                partyCollection.insert(existingParty.copy(
+                  party.id.toString,
+                  party.getName,
+                  party.firstEmail().emailAddress,
+                  if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
+                  party.firstAddress().zip.toUpperCase,
+                  party.isInstanceOf[COrganisation],
+                  postcodeUnit.location,
+                  groups
+                ))
+            }
+
+          case None =>
+            partyCollection.insert(Party(
+              party.id.toString,
+              party.getName,
+              party.firstEmail().emailAddress,
+              if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
+              party.firstAddress().zip.toUpperCase,
+              party.isInstanceOf[COrganisation],
+              postcodeUnit.location,
+              groups
+            ))
+        })
+
+      case None => {
+        Left(s"Unable to find location for party ${party.getName} with postcode ${party.firstAddress().zip}")
+      }
+    }
   }
 
   override def onStop(app: Application) = {

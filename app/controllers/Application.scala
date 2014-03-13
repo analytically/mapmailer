@@ -82,7 +82,7 @@ object Application extends Controller with MongoController {
               BSONDocument("$geoWithin" -> BSONDocument("$centerSphere" -> BSONArray(coordinates, (request.body \ "geometry" \ "radius").as[Double] / 1609.34 / 3959)))))
               .cursor[Party].collect[List]()
 
-          case "polygon" =>
+          case "polygon" | "rectangle" =>
             val coordinates = (request.body \ "geometry" \ "coordinates").as[Array[Array[Array[Double]]]].flatten.map(coordinate => BSONArray(coordinate.head, coordinate.tail.head))
 
             partyCollection.find(BSONDocument("loc" ->

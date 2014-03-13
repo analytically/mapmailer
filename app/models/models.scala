@@ -23,7 +23,6 @@ object Party {
 }
 
 case class PostcodeUnit(@Key("pc") postcode: String,
-                        @Key("q") pqi: String,
                         @Key("loc") location: Location,
                         _id: BSONObjectID = BSONObjectID.generate)
 

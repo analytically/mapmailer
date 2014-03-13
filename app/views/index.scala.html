@@ -123,7 +123,7 @@
                     },
                     metric: false
                 },
-                rectangle: false,
+                rectangle: true,
                 circle: {
                     shapeOptions: {
                         color: '#2F4F4F'
@@ -154,7 +154,7 @@
         map.on('draw:created', function (e) {
             var type = e.layerType, layer = e.layer;
 
-            if (type === 'polygon' || type === 'circle') {
+            if (type === 'polygon' || type === 'circle' || type === 'rectangle') {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
                     function compare(a,b) {
                         if (a.name < b.name)

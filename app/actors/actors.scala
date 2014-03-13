@@ -33,7 +33,6 @@ class ProcessCPOCsvEntry extends MongoActor with ActorLogging {
       val latLng = osgbToWgs84Transform.transform(eastNorth, eastNorth)
 
       pcuCollection.insert(PostcodeUnit(CharMatcher.WHITESPACE.removeFrom(entry.postcode).toUpperCase,
-        entry.positionalQualityIndicator,
         Location(truncateAt(latLng.getOrdinate(0), 8), truncateAt(latLng.getOrdinate(1), 8))
       ))
   }
