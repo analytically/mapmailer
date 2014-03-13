@@ -151,10 +151,8 @@
             });
         });
 
-        map.on('draw:created', function (e) {
-            var type = e.layerType, layer = e.layer;
-
-            if (type === 'polygon' || type === 'circle' || type === 'rectangle') {
+        var bindPopups = function(layer) {
+            if (layer instanceof L.Polygon || layer instanceof L.Circle || layer instanceof L.Rectangle) {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
                     function compare(a,b) {
                         if (a.name < b.name)
@@ -205,6 +203,16 @@
                     drawnItems.addLayer(layer);
                 }, 'json');
             }
+        };
+
+        map.on('draw:created', function(e) {
+            bindPopups(e.layer);
+        });
+
+        map.on('draw:edited', function(e) {
+            e.layers.eachLayer(function (layer) {
+                bindPopups(layer);
+            });
         });
 
         new L.Control.Scale({maxWidth: 1200, metric: false}).addTo(map);
