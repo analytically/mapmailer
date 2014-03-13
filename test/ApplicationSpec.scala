@@ -111,7 +111,7 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       partyCollection.remove(BSONDocument("cid" -> "12345678"))
     }
 
-    "import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+    /*"import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
       import ExecutionContext.Implicits.global
 
       val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
@@ -157,6 +157,6 @@ class ApplicationSpec extends Specification with NoTimeConversions {
 
       partyCollection.remove(BSONDocument("cid" -> "12345678"))
       pcuCollection.remove(BSONDocument("pc" -> "DY104PW"))
-    }
+    }*/
   }
 }

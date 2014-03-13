@@ -56,7 +56,7 @@
         });
 
         @for(group <- groups) {
-        var @(group)Group = new L.LayerGroup();
+        var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
         }
 
         var mapTiles = L.tileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
@@ -70,7 +70,7 @@
         });
 
         var overlays = {
-            @for(group <- groups) { "@(group)":@(group)Group, }
+            @for(group <- groups) { "@(group)":group@(group.replaceAll("[^a-zA-Z0-9]", "")), }
         };
         L.control.layers({}, overlays).addTo(map);
 
@@ -89,7 +89,7 @@
                 if ($.grep(organisationMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     organisationMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(organisationPopupTemplate(party)));
-                    $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
+                    $.each(party.groups, function(i, group) { eval("marker.addTo(group" + group.replace(/\W/g, '') + ");"); });
                 }
                 return marker;
             }
@@ -99,7 +99,7 @@
                 if ($.grep(personMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     personMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(personPopupTemplate(party)));
-                    $.each(party.groups, function(i, group) { eval("marker.addTo(" + group + "Group);"); });
+                    $.each(party.groups, function(i, group) { eval("marker.addTo(group" + group.replace(/\W/g, '') + ");"); });
                 }
                 return marker;
             }
@@ -175,7 +175,7 @@
                     var partyGroupFilter = function(party) {
                         layerCurrentlyAddedToMap = false;
                         $.each(party.groups, function(i, group) {
-                            if (eval("map.hasLayer(" + group + "Group)")) {
+                            if (eval("map.hasLayer(group" + group.replace(/\W/g, '') + ")")) {
                                 layerCurrentlyAddedToMap = true;
                             }
                         });

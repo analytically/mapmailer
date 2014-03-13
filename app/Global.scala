@@ -23,6 +23,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 import scala.concurrent.{Future, ExecutionContext}
 import scala.Some
+import scala.util.Try
 import uk.co.coen.capsulecrm.client._
 import play.api.Play.current
 import ExecutionContext.Implicits.global
@@ -63,15 +64,13 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     pcuCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
     partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
 
-    if (Play.isProd) {
-      app.configuration.getString("capsulecrm.url") match {
-        case Some(url) =>
-          importParties(pcuCollection, partyCollection, CParty.listAll().get())
-          Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
-            importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
-          }
-        case _ =>
-      }
+    app.configuration.getString("capsulecrm.url") match {
+      case Some(url) if Play.isProd =>
+        importParties(pcuCollection, partyCollection, CParty.listAll().get())
+        Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
+          importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
+        }
+      case _ =>
     }
   }
 
@@ -83,7 +82,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
         if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
           Futures.addCallback(JdkFutureAdapters.listenInPoolThread(party.listTags()), new FutureCallback[CTags] {
             override def onSuccess(tags: CTags) = {
-              if (!tags.tags.map(_.name).exists(skipImport.toSet))
+              if (!tags.isEmpty && !tags.tags.map(_.name).exists(skipImport.toSet))
                 importParty(pcuCollection, partyCollection, party, tags) // todo log failure
             }
 
@@ -98,10 +97,10 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
     val groups = (tags.tags.map(_.name).diff(groupsToIgnore) ++
-      (if (party.isInstanceOf[COrganisation]) Nil else Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList))
-      .map(_.capitalize)
+      (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
       .filter(_.length > 1)
+      .map(_.capitalize)
       .distinct
       .toList
 
