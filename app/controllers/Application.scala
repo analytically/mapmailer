@@ -49,7 +49,7 @@ object Application extends Controller with MongoController {
     Ok("pong")
   }
 
-  def index = Cached("index", 3600) {
+  def index = Cached("index", 1800) {
     Action.async {
       db.command(Distinct("parties", "grps")).map {
         groups =>
@@ -58,13 +58,11 @@ object Application extends Controller with MongoController {
     }
   }
 
-  def party(partyId: String) = Cached("party-" + partyId, 3600) {
-    rateLimited {
-      Action.async {
-        db.collection[BSONCollection]("parties").find(BSONDocument("pid" -> partyId)).one[Party].map {
-          case Some(party) => Ok(Json.toJson(party))
-          case None => NotFound("not found")
-        }
+  def party(partyId: String) = rateLimited {
+    Action.async {
+      db.collection[BSONCollection]("parties").find(BSONDocument("pid" -> partyId)).one[Party].map {
+        case Some(party) => Ok(Json.toJson(party))
+        case None => NotFound("not found")
       }
     }
   }
