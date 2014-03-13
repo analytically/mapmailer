@@ -7,7 +7,7 @@ import play.modules.reactivemongo.json.BSONFormats._
 case class Location(@Key("lng") longitude: Double,
                     @Key("lat") latitude: Double)
 
-case class Party(@Key("cid") partyId: String,
+case class Party(@Key("pid") partyId: String,
                  @Key("n") name: String,
                  @Key("em") emailAddress: String,
                  @Key("ws") website: Option[String],

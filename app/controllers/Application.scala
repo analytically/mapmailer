@@ -61,7 +61,7 @@ object Application extends Controller with MongoController {
   def party(partyId: String) = Cached("party-" + partyId, 3600) {
     rateLimited {
       Action.async {
-        db.collection[BSONCollection]("parties").find(BSONDocument("cid" -> partyId)).one[Party].map {
+        db.collection[BSONCollection]("parties").find(BSONDocument("pid" -> partyId)).one[Party].map {
           case Some(party) => Ok(Json.toJson(party))
           case None => NotFound("not found")
         }

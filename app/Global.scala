@@ -62,7 +62,10 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
 
     pcuCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
+
+    partyCollection.indexesManager.ensure(Index(List("pid" -> Ascending)))
     partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
+    partyCollection.indexesManager.ensure(Index(List("grps" -> Ascending)))
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) if Play.isProd =>
@@ -106,7 +109,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
 
     pcuCollection.find(BSONDocument("pc" -> CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase)).one[PostcodeUnit].map {
       case Some(postcodeUnit) =>
-        Right(partyCollection.find(BSONDocument("cid" -> party.id.toString)).one[Party].flatMap {
+        Right(partyCollection.find(BSONDocument("pid" -> party.id.toString)).one[Party].flatMap {
           case Some(existingParty) =>
             partyCollection.remove(existingParty).flatMap { _ =>
                 partyCollection.insert(existingParty.copy(

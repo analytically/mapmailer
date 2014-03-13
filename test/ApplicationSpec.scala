@@ -108,7 +108,7 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       contentType(exclusiveRequest) must beSome.which(_ == "application/json")
       contentAsString(exclusiveRequest) must contain("[]")
 
-      partyCollection.remove(BSONDocument("cid" -> "12345678"))
+      partyCollection.remove(BSONDocument("pid" -> "12345678"))
     }
 
     /*"import and search with valid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
@@ -155,7 +155,7 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       status(inclusiveRequestNotFound) must equalTo(OK)
       contentAsString(inclusiveRequestNotFound) must contain("[]")
 
-      partyCollection.remove(BSONDocument("cid" -> "12345678"))
+      partyCollection.remove(BSONDocument("pid" -> "12345678"))
       pcuCollection.remove(BSONDocument("pc" -> "DY104PW"))
     }*/
   }
