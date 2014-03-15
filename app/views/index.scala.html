@@ -29,7 +29,21 @@
             }
         });
 
-        Handlebars.registerHelper("slice", function (array, size, options, elseFn) {
+        Handlebars.registerHelper("startWith", function(prefix, str) {
+            if ((str != null ? str.indexOf(prefix) : void 0) === 0) {
+                return str;
+            }
+            return prefix + str;
+        });
+
+        Handlebars.registerHelper("stripPrefix", function(prefix, str) {
+            if ((str != null ? str.indexOf(prefix) : void 0) === 0) {
+                return str.substr(prefix.length);
+            }
+            return str;
+        });
+
+        Handlebars.registerHelper("slice", function (array, size, options) {
             if (array && array.length > 0) {
                 var buffer = "";
                 var len = array.length, i = 0, j = 0;
@@ -40,9 +54,7 @@
                 }
                 return buffer;
             }
-            else {
-                return elseFn();
-            }
+            else return options.inverse(this);
         });
 
         L.Circle = L.Circle.extend({
@@ -240,7 +252,7 @@
     <strong><span title="{{ join groups ', '}} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
     <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in Capsule CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
-    <a href="{{ website }}" target="_blank" title="Open {{ website }}" class="btn btn-default btn-xs"><i class="fa fa-external-link fa-lg"></i></a>
+    <a href="{{startWith 'http://' website }}" target="_blank" title="Open {{stripPrefix 'http://' website }}" class="btn btn-default btn-xs"><i class="fa fa-external-link fa-lg"></i></a>
 </script>
 
 <script id="area-popup" type="text/x-handlebars-template">
