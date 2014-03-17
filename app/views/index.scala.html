@@ -94,9 +94,11 @@
         var organisationPopupTemplate = Handlebars.compile($("#organisation-popup").html());
         var personPopupTemplate = Handlebars.compile($("#person-popup").html());
 
+        var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
+        var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
+
         var createMarkerAndAddToLayer = function(party) {
             if (party.organisation) {
-                var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
                 var marker = L.marker([party.location.latitude, party.location.longitude], {icon: organisationIcon});
                 if ($.grep(organisationMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     organisationMarkers.push(marker.getLatLng());
@@ -106,7 +108,6 @@
                 return marker;
             }
             else {
-                var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
                 var marker = L.marker([party.location.latitude, party.location.longitude], {icon: personIcon});
                 if ($.grep(personMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     personMarkers.push(marker.getLatLng());
