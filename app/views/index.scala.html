@@ -12,6 +12,10 @@
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.draw.js")"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.awesome-markers.js")"></script>
 <script type="text/javascript">
+    @for(group <- groups) {
+        var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
+    }
+
     $(function() {
         Swag.registerHelpers(Handlebars);
 
@@ -54,7 +58,7 @@
                 }
                 return buffer;
             }
-            else return options.inverse(this);
+            return options.inverse(this);
         });
 
         L.Circle = L.Circle.extend({
@@ -66,10 +70,6 @@
                 });
             }
         });
-
-        @for(group <- groups) {
-        var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
-        }
 
         var mapTiles = L.tileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors. Map style &copy; <a href="http://www.thunderforest.com/">Thunderforest</a>'
@@ -101,7 +101,7 @@
                 if ($.grep(organisationMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     organisationMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(organisationPopupTemplate(party)));
-                    $.each(party.groups, function(i, group) { eval("marker.addTo(group" + group.replace(/\W/g, '') + ");"); });
+                    party.groups.forEach(function(group) { marker.addTo(window['group' + group.replace(/\W/g, '')]); });
                 }
                 return marker;
             }
@@ -111,7 +111,7 @@
                 if ($.grep(personMarkers, function(e){ return e.equals(marker.getLatLng()); }).length == 0) {
                     personMarkers.push(marker.getLatLng());
                     marker.bindPopup(L.popup(popupOptions).setContent(personPopupTemplate(party)));
-                    $.each(party.groups, function(i, group) { eval("marker.addTo(group" + group.replace(/\W/g, '') + ");"); });
+                    party.groups.forEach(function(group) { marker.addTo(window['group' + group.replace(/\W/g, '')]); });
                 }
                 return marker;
             }
@@ -166,50 +166,36 @@
         var bindPopups = function(layer) {
             if (layer instanceof L.Polygon || layer instanceof L.Circle || layer instanceof L.Rectangle) {
                 $.postJSON('/party/search', layer.toGeoJSON(), function(data) {
-                    function compare(a,b) {
-                        if (a.name < b.name)
-                            return -1;
-                        if (a.name > b.name)
-                            return 1;
-                        return 0;
-                    }
-
                     data = data.filter(function(party) {
-                        return party.partyId != $.url().param('partyId')
-                    }).sort(compare);
+                        return party.partyId !== $.url().param('partyId')
+                    }).sort(function(a, b) {
+                        return (a.name === b.name) ? 0 : (a.name > b.name) ? 1 : -1;
+                    });
 
-                    $.each(data, function(i, party) {
+                    data.forEach(function(party) {
                         createMarkerAndAddToLayer(party);
                     });
 
                     var partyGroupFilter = function(party) {
-                        layerCurrentlyAddedToMap = false;
-                        $.each(party.groups, function(i, group) {
-                            if (eval("map.hasLayer(group" + group.replace(/\W/g, '') + ")")) {
-                                layerCurrentlyAddedToMap = true;
-                            }
+                        return party.groups.some(function(group) {
+                            return map.hasLayer(window['group' + group.replace(/\W/g, '')]);
                         });
-                        return layerCurrentlyAddedToMap;
                     };
 
                     layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
 
-                    data.filter(function(party) {
-                        $.each(party.groups, function(i, group) {
-                            map.on('overlayadd', function(e) {
-                                if (layer !== undefined) {
-                                    layer.unbindPopup();
-                                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
-                                }
-                            });
+                    map.on('overlayadd', function(e) {
+                        if (layer !== undefined) {
+                            layer.unbindPopup();
+                            layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
+                        }
+                    });
 
-                            map.on('overlayremove', function(e) {
-                                if (layer !== undefined) {
-                                    layer.unbindPopup();
-                                    layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
-                                }
-                            });
-                        });
+                    map.on('overlayremove', function(e) {
+                        if (layer !== undefined) {
+                            layer.unbindPopup();
+                            layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
+                        }
                     });
 
                     drawnItems.addLayer(layer);
