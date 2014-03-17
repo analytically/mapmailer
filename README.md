@@ -46,6 +46,12 @@ After all CodePoint Open files are imported and processed, they are moved to the
 
 Then visit [http://localhost:9000](http://localhost:9000) and you should see the map.
 
+#### Capsule CRM Custom Field
+
+Use a custom field to link your contact to your map.
+
+![customfield](customfield.png)
+
 #### Technology
 
 * [Play Framework 2.2](http://www.playframework.org)
