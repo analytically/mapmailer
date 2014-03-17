@@ -187,14 +187,12 @@
 
                     map.on('overlayadd', function(e) {
                         if (layer !== undefined) {
-                            layer.unbindPopup();
                             layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
                         }
                     });
 
                     map.on('overlayremove', function(e) {
                         if (layer !== undefined) {
-                            layer.unbindPopup();
                             layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
                         }
                     });
