@@ -48,7 +48,8 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 
 #### Capsule CRM Custom Field
 
-Use a custom field to link your contact to your map.
+Use a custom field to link your contact to your map: `Settings` > `Custom Field Settings: for People & Organisations`
+> `Add new...` > `Generated Link` and use your server in `Link Definition` appended with `?partyId={id}`, like so:
 
 ![customfield](customfield.png)
 
