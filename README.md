@@ -1,7 +1,7 @@
 mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.png)](https://travis-ci.org/analytically/mapmailer)
 =========
 
-Email CRM contacts by drawing (polygon and circle) an area on a map. Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
+Email CRM contacts by drawing (polygon and circle) an area on a map (UK). Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
 Follow [@analytically](http://twitter.com/analytically) for updates.
 
 ![screenshot](screenshot.png)
@@ -29,7 +29,9 @@ This builds a single, executable 'fat' jar in `target/scala-2.10`.
 Prebuilt releases are available [here](https://github.com/analytically/mapmailer/releases).
 
 Capsule CRM users can find their API token by visiting `My Preferences` via their username menu in the Capsule navigation bar.
-See [application.conf](conf/application.conf) for more configurable options.
+See [application.conf](conf/application.conf) for more configurable options. In order to group your contacts, you need to add tags
+(e.g. 'Customer' or 'VIP'). For persons the job title field (comma separated) will also be used as groups (e.g. 'CTO, Customer').
+New and modified contacts should appear after 5-10 minutes.
 
 Copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
 files to the `codepointopen` directory in the same directory with the downloaded jar.
@@ -51,7 +53,7 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 * [Akka](http://akka.io) provides a nice concurrency model [to process the 1.7 million postcodes](https://github.com/analytically/mapmailer/blob/master/app/actors/actors.scala#L41) in under one minute on modern hardware
 * [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
 * [ReactiveMongo](http://reactivemongo.org/) is a Scala MongoDB driver that provides fully non-blocking and asynchronous I/O operations
-* [Bootstrap](http://getbootstrap.com/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/)
+* [Bootstrap](http://getbootstrap.com/), [Font Awesome](http://fortawesome.github.com/Font-Awesome/) and [Handlebars](http://handlebarsjs.com/)
 
 Geo:
 
