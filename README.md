@@ -69,6 +69,12 @@ Geo:
 * [Leaflet awesome-markers plugin](https://github.com/lvoogdt/Leaflet.awesome-markers)
 * [Thunderforest](http://www.thunderforest.com/) transport map
 
+CRM:
+
+* [Unofficial Capsule CRM API Java Client](https://github.com/analytically/capsulecrm-java) - depends on
+  [Async Http Client](https://github.com/AsyncHttpClient/async-http-client), [Google Guava](https://code.google.com/p/guava-libraries/),
+  [XStream](http://xstream.codehaus.org/) and [Joda-Time](http://www.joda.org/joda-time/).
+
 #### Background and usecase
 
 This software was built for [Coen Recruitment](http://www.coen.co.uk/), an education recruitment agency in the UK. Since
