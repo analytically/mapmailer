@@ -13,7 +13,7 @@
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.awesome-markers.js")"></script>
 <script type="text/javascript">
     @for(group <- groups) {
-        var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
+    var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
     }
 
     $(function() {

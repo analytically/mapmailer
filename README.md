@@ -33,7 +33,7 @@ See [application.conf](conf/application.conf) for more configurable options. In 
 (e.g. 'Customer' or 'VIP'). For persons the job title field (comma separated) will also be used as groups (e.g. 'CTO, Customer').
 New and modified contacts should appear after 5-10 minutes.
 
-Copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, 20mb)
+Download and copy the [CodePoint Open CSV](https://www.ordnancesurvey.co.uk/opendatadownload/products.html) (scroll halfway down, about 20 MB)
 files to the `codepointopen` directory in the same directory with the downloaded jar.
 
 Start the application:
