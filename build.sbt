@@ -31,6 +31,10 @@ libraryDependencies += "org.geotools" % "gt-main" % "10.5" excludeAll ExclusionR
 
 libraryDependencies += "org.geotools" % "gt-epsg-hsql" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
 
+play.Project.playScalaSettings
+
+net.virtualvoid.sbt.graph.Plugin.graphSettings
+
 libraryDependencies ~= { _ map {
   case m if m.organization == "org.apache.httpcomponents" =>
     m.exclude("commons-logging", "commons-logging")
@@ -38,7 +42,3 @@ libraryDependencies ~= { _ map {
     m.exclude("commons-logging", "commons-logging").exclude("org.springframework", "spring-aop").exclude("org.springframework", "spring-context").exclude("org.springframework", "spring-beans").exclude("org.springframework", "spring-core").exclude("org.springframework", "spring-expression").exclude("org.springframework", "spring-asm")
   case m => m
 }}
-
-play.Project.playScalaSettings
-
-net.virtualvoid.sbt.graph.Plugin.graphSettings
