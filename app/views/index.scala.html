@@ -11,6 +11,7 @@
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.js"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.draw.js")"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.awesome-markers.js")"></script>
+<script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/leaflet.measurecontrol.js")"></script>
 <script type="text/javascript">
     @for(group <- groups) {
     var group@(group.replaceAll("[^a-zA-Z0-9]", "")) = new L.LayerGroup();
@@ -187,12 +188,14 @@
 
                     map.on('overlayadd', function(e) {
                         if (layer !== undefined) {
+                            layer.closePopup();
                             layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
                         }
                     });
 
                     map.on('overlayremove', function(e) {
                         if (layer !== undefined) {
+                            layer.closePopup();
                             layer.bindPopup(L.popup(popupOptions).setContent(layerTemplate(data.filter(partyGroupFilter))));
                         }
                     });
@@ -212,6 +215,7 @@
             });
         });
 
+        L.Control.measureControl({handler: {metric: false}}).addTo(map);
         new L.Control.Scale({maxWidth: 1200, metric: false}).addTo(map);
         new L.Control.Scale({maxWidth: 600, metric: false}).addTo(map);
         new L.Control.Scale({maxWidth: 300, metric: false}).addTo(map);

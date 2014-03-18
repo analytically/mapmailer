@@ -19,11 +19,10 @@ import reactivemongo.api.indexes.IndexType.{Geo2D, Ascending}
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONDocument
 import reactivemongo.core.commands.LastError
-import scala.annotation.tailrec
 import scala.collection.JavaConversions._
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent._
 import scala.Some
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 import uk.co.coen.capsulecrm.client._
 import play.api.Play.current
 import ExecutionContext.Implicits.global
@@ -33,6 +32,17 @@ import scala.concurrent.duration._
 
 object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
   val camelContext = new DefaultCamelContext()
+
+  implicit def javaFutureToScalaFuture[T](javaFuture: java.util.concurrent.Future[T]) = {
+    val p = promise[T]
+
+    Futures.addCallback(JdkFutureAdapters.listenInPoolThread(javaFuture), new FutureCallback[T]() {
+      override def onSuccess(result: T) = p.success(result)
+      override def onFailure(t: Throwable) = p.failure(t)
+    })
+
+    p.future
+  }
 
   override def onStart(app: Application) {
     val processActor = Akka.system.actorOf(Props[ProcessCPOCsvEntry], name = "processCPOCsvEntry")
@@ -68,30 +78,35 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     partyCollection.indexesManager.ensure(Index(List("grps" -> Ascending)))
 
     app.configuration.getString("capsulecrm.url") match {
-      case Some(url) if Play.isProd =>
-        importParties(pcuCollection, partyCollection, CParty.listAll().get())
+      case Some(url) if !Play.isTest =>
+        importParties(pcuCollection, partyCollection, CParty.listAll())
+
         Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
-          importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)).get())
+          importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)))
         }
       case _ =>
     }
   }
 
-  def importParties(pcuCollection: BSONCollection, partyCollection: BSONCollection, parties: CParties) {
+  def importParties(pcuCollection: BSONCollection, partyCollection: BSONCollection, partiesFuture: Future[CParties]) {
     val skipImport = Play.current.configuration.getStringList("groups.skipImport").get
 
-    parties.map {
-      party =>
-        if (party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
-          Futures.addCallback(JdkFutureAdapters.listenInPoolThread(party.listTags()), new FutureCallback[CTags] {
-            override def onSuccess(tags: CTags) = {
-              if (!tags.isEmpty && !tags.tags.map(_.name).exists(skipImport.toSet))
-                importParty(pcuCollection, partyCollection, party, tags) // todo log failure
-            }
-
-            override def onFailure(failure: Throwable) = Logger.error(failure.getMessage, failure)
-          })
+    partiesFuture.onComplete {
+      case Success(parties) =>
+        for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
+          party.listTags().onComplete {
+            case Success(tags) => if (!tags.isEmpty && !tags.tags.map(_.name).exists(skipImport.toSet))
+              importParty(pcuCollection, partyCollection, party, tags) onComplete {
+                case Success(result) => result match {
+                  case Right(insertResult) =>
+                  case Left(message) => Logger.error(message)
+                }
+                case Failure(t) => Logger.error(t.getMessage)
+              }
+            case Failure(t) => Logger.error(t.getMessage, t)
+          }
         }
+      case Failure(t) => Logger.error(t.getMessage, t)
     }
   }
 
@@ -101,7 +116,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
 
     val groups = (tags.tags.map(_.name).diff(groupsToIgnore) ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
-      .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group))
+      .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
       .map(_.capitalize)
       .distinct
@@ -137,9 +152,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
             ))
         })
 
-      case None => {
-        Left(s"Unable to find location for party ${party.getName} with postcode ${party.firstAddress().zip}")
-      }
+      case None => Left(s"Unable to find location for party ${party.getName} with postcode ${party.firstAddress().zip}")
     }
   }
 
