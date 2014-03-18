@@ -1,8 +1,8 @@
 mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.png)](https://travis-ci.org/analytically/mapmailer)
 =========
 
-Email CRM contacts by drawing (polygon and circle) an area on a map (UK). Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
-Follow [@analytically](http://twitter.com/analytically) for updates. Usage video available [here](https://www.youtube.com/watch?v=KkWUCm6CSBM).
+Email CRM contacts by drawing an area on a map (UK). Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
+Follow [@analytically](http://twitter.com/analytically) for updates. Check the video [here](https://www.youtube.com/watch?v=KkWUCm6CSBM)!
 
 ![screenshot](screenshot.png)
 ![screenshot2](screenshot2.png)
@@ -22,7 +22,7 @@ Requires [Play Framework 2.2](http://www.playframework.com/).
 play assembly
 ```
 
-This builds a single, executable 'fat' jar in `target/scala-2.10`.
+This builds a single, executable 'fat' jar: `target/scala-2.10/mapmailer.jar`.
 
 #### Running
 
@@ -48,7 +48,7 @@ Then visit [http://localhost:9000](http://localhost:9000) and you should see the
 
 #### Capsule CRM Custom Field
 
-Use a custom field to link your contact to your map: `Settings` > `Custom Field Settings: for People & Organisations` > `Add new...` > `Generated Link` and use your server in `Link Definition` appended with `?partyId={id}`, like so:
+Use a custom field to have a direct link from your contact to the map. In Capsule CRM, go to `Settings` > `Custom Field Settings: for People & Organisations` > `Add new...` > `Generated Link` and use your server in `Link Definition` appended with `?partyId={id}`, for example:
 
 ![customfield](customfield.png)
 
@@ -66,6 +66,7 @@ Geo:
 * [GeoTools](http://www.geotools.org) converts the CodePoint Open eastings/northings to latitude/longitude
 * [Leaflet](http://leafletjs.com/) for the map
 * [Leaflet Draw](https://github.com/Leaflet/Leaflet.draw)
+* [Leaflet awesome-markers plugin](https://github.com/lvoogdt/Leaflet.awesome-markers)
 * [Thunderforest](http://www.thunderforest.com/) transport map
 
 #### Background and usecase
