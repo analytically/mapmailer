@@ -54,7 +54,7 @@ Use a custom field to have a direct link from your contact to the map. In Capsul
 
 #### Technology
 
-* [Play Framework 2.2](http://www.playframework.org)
+* [Play Framework 2.2](http://www.playframework.org) with [Scala](http://www.scala-lang.org/)
 * [Apache Camel](http://camel.apache.org) to [process and monitor](https://github.com/analytically/mapmailer/blob/master/app/Global.scala#L34) the `codepointopen` directory and to tell the actors about the postcodes
 * [Akka](http://akka.io) provides a nice concurrency model [to process the 1.7 million postcodes](https://github.com/analytically/mapmailer/blob/master/app/actors/actors.scala#L41) in under one minute on modern hardware
 * [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
