@@ -19,7 +19,7 @@ libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" e
 
 libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.0-rc1"
 
-libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.2.3"
+libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "[1.2,)"
 
 libraryDependencies += "org.apache.camel" % "camel-core" % "2.11.4"
 

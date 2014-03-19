@@ -95,7 +95,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       case Success(parties) =>
         for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
           party.listTags().onComplete {
-            case Success(tags) => if (!tags.isEmpty && !tags.tags.map(_.name).exists(skipImport.toSet))
+            case Success(tags) if !tags.tags.map(_.name).exists(skipImport.toSet) =>
               importParty(pcuCollection, partyCollection, party, tags) onComplete {
                 case Success(result) => result match {
                   case Right(insertResult) =>
@@ -107,6 +107,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
           }
         }
       case Failure(t) => Logger.error(t.getMessage, t)
+      case _ =>
     }
   }
 
@@ -114,12 +115,14 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val groupsToIgnore = Play.current.configuration.getStringList("groups.ignore").get
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    val groups = (tags.tags.map(_.name).diff(groupsToIgnore) ++
+    val groups = (tags.tags.map(_.name) ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
+      .diff(groupsToIgnore)
       .map(_.capitalize)
       .distinct
+      .padTo(1, "No groups")
       .toList
 
     pcuCollection.find(BSONDocument("pc" -> CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase)).one[PostcodeUnit].map {
