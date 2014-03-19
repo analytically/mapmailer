@@ -55,6 +55,21 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       status(request) must equalTo(NOT_FOUND)
     }
 
+    "get party with valid id" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
+      import ExecutionContext.Implicits.global
+
+      val partyCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+      Await.result(partyCollection.insert(Party("12345678", "Some School", "mathias.bogaert@gmail.com", Some("http://www.coen.co.uk/"), "DY10 4PW",
+        true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
+
+      val request = route(FakeRequest(GET, "/party/12345678")).get
+      status(request) must equalTo(OK)
+      contentType(request) must beSome.which(_ == "application/json")
+      contentAsString(request) must contain("Some School")
+
+      partyCollection.remove(BSONDocument("pid" -> "12345678"))
+    }
+
     "search with invalid json" in new WithApplication(FakeApplication(additionalConfiguration = testConfig)) {
       val request = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.obj(
         "blah" -> 98
