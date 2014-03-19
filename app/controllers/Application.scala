@@ -30,7 +30,7 @@ object Application extends Controller with MongoController {
   lazy val rateLimiters = CacheBuilder.newBuilder().maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build(
     new CacheLoader[String, RateLimiter] {
       def load(key: String) = {
-        RateLimiter.create(configuration.getInt("ratelimit").getOrElse(3).toDouble)
+        RateLimiter.create(configuration.getInt("ratelimit").getOrElse(5).toDouble)
       }
     })
 
@@ -90,7 +90,7 @@ object Application extends Controller with MongoController {
           case Success(v) => v.map {
             parties => Ok(Json.toJson(parties))
           }
-          case Failure(e) => Future.successful(BadRequest)
+          case Failure(e) => Future.successful(BadRequest(e.getMessage))
         }
     }
   }
