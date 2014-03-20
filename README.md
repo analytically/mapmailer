@@ -86,3 +86,9 @@ to market teachers to schools efficiently. Parts of this project are based on [C
 Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 Copyright 2014 [Mathias Bogaert](mailto:mathias.bogaert@gmail.com).
+
+This data contains Ordnance Survey data &copy; Crown copyright and database right 2013. Code-Point Open contains
+Royal Mail data &copy; Royal Mail copyright and database right 2012. Code-Point Open and ONSPD contains National Statistics
+data &copy; Crown copyright and database right 2013.
+
+OS data may be used under the terms of the [OS OpenData licence](http://www.ordnancesurvey.co.uk/oswebsite/docs/licences/os-opendata-licence.pdf).
