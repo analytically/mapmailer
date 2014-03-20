@@ -90,7 +90,9 @@ object Application extends Controller with MongoController {
           case Success(v) => v.map {
             parties => Ok(Json.toJson(parties))
           }
-          case Failure(e) => Future.successful(BadRequest(e.getMessage))
+          case Failure(e) =>
+            Logger.error(s"Failure while searching for parties: ${e.getMessage}. JSON:\n${request.body}", e)
+            Future.successful(BadRequest(e.getMessage))
         }
     }
   }
