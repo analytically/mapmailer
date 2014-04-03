@@ -1,4 +1,4 @@
-mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.png)](https://travis-ci.org/analytically/mapmailer)
+mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.svg?branch=master)](https://travis-ci.org/analytically/mapmailer)
 =========
 
 Email CRM contacts by drawing an area on a map (UK). Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
