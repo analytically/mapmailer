@@ -161,6 +161,13 @@
                         emailAddresses.splice($.inArray(value, emailAddresses), 1);
                         return "mailto:?bcc=" + emailAddresses.join(',');
                     });
+                },
+                onItemAdd: function(value, item) {
+                    $('.email:last').attr('href', function (i, val) {
+                        var emailAddresses = val.substr(12).split(',');
+                        emailAddresses.push(value);
+                        return "mailto:?bcc=" + emailAddresses.join(',');
+                    });
                 }
             });
         });
