@@ -15,6 +15,8 @@ libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.2.2" from "h
 
 libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
 
+libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.3" // reactivemongo depends on scala-compiler
+
 libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.0-rc1"
 
 libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "[1.2,)"
