@@ -71,11 +71,11 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
     val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
 
-    pcuCollection.indexesManager.ensure(Index(List("pc" -> Ascending)))
+    pcuCollection.indexesManager.ensure(Index(Seq("pc" -> Ascending), background = true))
 
-    partyCollection.indexesManager.ensure(Index(List("pid" -> Ascending)))
-    partyCollection.indexesManager.ensure(Index(List("loc" -> Geo2D)))
-    partyCollection.indexesManager.ensure(Index(List("grps" -> Ascending)))
+    partyCollection.indexesManager.ensure(Index(Seq("pid" -> Ascending), background = true))
+    partyCollection.indexesManager.ensure(Index(Seq("loc" -> Geo2D), background = true))
+    partyCollection.indexesManager.ensure(Index(Seq("grps" -> Ascending), background = true))
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) if !Play.isTest =>
