@@ -1,18 +1,16 @@
 package actors
 
 import akka.actor.{ActorLogging, Actor}
-import org.opengis.referencing.crs.CoordinateReferenceSystem
 import org.geotools.referencing.CRS
 import org.geotools.referencing.crs.DefaultGeographicCRS
-import com.google.common.base.{CharMatcher, Throwables}
-import org.opengis.referencing.FactoryException
+import com.google.common.base.CharMatcher
 import models.csv.CodePointOpenCsvEntry
 import models.{Location, PostcodeUnit}
-import org.opengis.geometry.DirectPosition
 import org.geotools.geometry.GeneralDirectPosition
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import play.api.Play.current
 import reactivemongo.api.collections.default.BSONCollection
+import scala.util.{Failure, Success}
 
 trait MongoActor extends Actor {
   def driver = ReactiveMongoPlugin.driver
@@ -34,7 +32,10 @@ class ProcessCPOCsvEntry extends MongoActor with ActorLogging {
 
       pcuCollection.insert(PostcodeUnit(CharMatcher.WHITESPACE.removeFrom(entry.postcode).toUpperCase,
         Location(truncateAt(latLng.getOrdinate(0), 8), truncateAt(latLng.getOrdinate(1), 8))
-      ))
+      )).onComplete{
+        case Failure(e) => throw e
+        case Success(_) =>
+      }
   }
 
   def truncateAt(n: Double, p: Int): Double = { val s = math pow (10, p); (math floor n * s) / s }

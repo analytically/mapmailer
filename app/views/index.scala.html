@@ -95,8 +95,9 @@
         var organisationPopupTemplate = Handlebars.compile($("#organisation-popup").html());
         var personPopupTemplate = Handlebars.compile($("#person-popup").html());
 
-        var organisationIcon = L.AwesomeMarkers.icon({icon : 'fa-building-o', markerColor : 'cadetblue', prefix: 'fa'});
-        var personIcon = L.AwesomeMarkers.icon({icon : 'fa-user', markerColor : 'green', prefix: 'fa'});
+        var organisationIcon = L.AwesomeMarkers.icon({icon : '@play.Play.application().configuration().getString("icons.organisation")', markerColor : 'cadetblue', prefix: 'fa'});
+        var personIcon = L.AwesomeMarkers.icon({icon : '@play.Play.application().configuration().getString("icons.person")', markerColor : 'green', prefix: 'fa'});
+        var focusIcon = L.AwesomeMarkers.icon({icon: '@play.Play.application().configuration().getString("icons.focus")', markerColor: 'red', prefix: 'fa'});
 
         var createMarkerAndAddToLayer = function(party) {
             if (party.organisation) {
@@ -230,30 +231,29 @@
         if ($.url().param('partyId')) {
             $.getJSON('/party/' + $.url().param('partyId'),function (party) {
                 map.panTo(new L.LatLng(party.location.latitude, party.location.longitude), {animate: false});
-                map.setZoom(12);
-                var icon = L.AwesomeMarkers.icon({icon: 'fa-bullseye', markerColor: 'red', prefix: 'fa'});
-                createMarkerAndAddToLayer(party).setIcon(icon).addTo(map).openPopup();
+                map.setZoom(11);
+                createMarkerAndAddToLayer(party).setIcon(focusIcon).addTo(map).openPopup();
             }).fail(function () { alert("Can't find contact with id " + $.url().param('partyId')) });
         }
     });
 </script>
 
 <script id="person-popup" type="text/x-handlebars-template">
-    <strong><span title="{{ join groups ', '}} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
-    <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in Capsule CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
+    <strong><span title="{{ join groups ', '}} - {{ postcode }}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
+    <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
 </script>
 
 <script id="organisation-popup" type="text/x-handlebars-template">
-    <strong><span title="{{ join groups ', '}} - {{postcode}}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
-    <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in Capsule CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
+    <strong><span title="{{ join groups ', '}} - {{ postcode }}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
+    <a href="@play.Play.application().configuration().getString("crm.url")/{{ partyId }}" title="Open in CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
     <a href="{{startWith 'http://' website }}" target="_blank" title="Open {{stripPrefix 'http://' website }}" class="btn btn-default btn-xs"><i class="fa fa-external-link fa-lg"></i></a>
 </script>
 
 <script id="area-popup" type="text/x-handlebars-template">
     {{#if this}}
-    Found <strong>{{ this.length }}</strong> contacts.&nbsp;&nbsp;&nbsp;
+    <strong>{{ this.length }}</strong> contacts&nbsp;&nbsp;&nbsp;
     <a href="#" title="Email" class="btn btn-default btn-xs" onclick="$('#emailModal').appendTo('body').modal('show'); return false;"><i class="fa fa-envelope-o fa-lg"></i></a>
     <div class="modal fade" id="emailModal" tabindex="-1" role="dialog" aria-labelledby="emailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">

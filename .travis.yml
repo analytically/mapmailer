@@ -1,7 +1,7 @@
 language: scala
 services: mongodb
 env:
-  - PLAY_VERSION="2.2.2"
+  - PLAY_VERSION="2.3.2"
 before_script:
   - wget http://downloads.typesafe.com/play/${PLAY_VERSION}/play-${PLAY_VERSION}.zip
   - unzip -q play-${PLAY_VERSION}.zip

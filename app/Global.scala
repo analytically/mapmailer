@@ -34,7 +34,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
   val camelContext = new DefaultCamelContext()
 
   implicit def javaFutureToScalaFuture[T](javaFuture: java.util.concurrent.Future[T]) = {
-    val p = promise[T]
+    val p = promise[T]()
 
     Futures.addCallback(JdkFutureAdapters.listenInPoolThread(javaFuture), new FutureCallback[T]() {
       override def onSuccess(result: T) = p.success(result)
@@ -71,7 +71,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
     val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
 
-    pcuCollection.indexesManager.ensure(Index(Seq("pc" -> Ascending), background = true))
+    pcuCollection.indexesManager.ensure(Index(Seq("pc" -> Ascending), background = true, unique = true))
 
     partyCollection.indexesManager.ensure(Index(Seq("pid" -> Ascending), background = true))
     partyCollection.indexesManager.ensure(Index(Seq("loc" -> Geo2D), background = true))
@@ -81,7 +81,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       case Some(url) if !Play.isTest =>
         importParties(pcuCollection, partyCollection, CParty.listAll())
 
-        Akka.system().scheduler.schedule(5 minutes, 5 minutes) {
+        Akka.system().scheduler.schedule(10 minutes, 5 minutes) {
           importParties(pcuCollection, partyCollection, CParty.listModifiedSince(new DateTime().minusHours(1)))
         }
       case _ =>
@@ -95,14 +95,18 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       case Success(parties) =>
         for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
           party.listTags().onComplete {
-            case Success(tags) if !tags.tags.map(_.name).exists(skipImport.toSet) =>
+            case Success(tags) if tags.size > 0 && !tags.tags.map(_.name).exists(skipImport.toSet) =>
               importParty(pcuCollection, partyCollection, party, tags) onComplete {
                 case Success(result) => result match {
-                  case Right(insertResult) =>
-                  case Left(message) => Logger.error(message)
+                  case Right(insertResult) => insertResult.onComplete {
+                    case Failure(e) => Logger.error(e.getMessage, e)
+                    case Success(_) =>
+                  }
+                  case Left(message) => Logger.warn(message)
                 }
                 case Failure(t) => Logger.error(t.getMessage)
               }
+            case Success(tags) => Logger.debug(s"Skipping import of $party")
             case Failure(t) => Logger.error(t.getMessage, t)
           }
         }
