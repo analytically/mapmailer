@@ -123,9 +123,9 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
+      .distinct
       .diff(groupsToIgnore)
       .map(_.capitalize)
-      .distinct
       .padTo(1, "No groups")
       .toList
 

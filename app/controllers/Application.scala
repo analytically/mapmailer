@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit
 import com.google.common.util.concurrent.RateLimiter
 import play.api.Logger
 import play.api.Play._
-import play.api.cache.Cached
 import scala.util.{Failure, Success, Try}
 
 object Application extends Controller with MongoController {
@@ -49,12 +48,10 @@ object Application extends Controller with MongoController {
     Ok("pong")
   }
 
-  def index = Cached("index", 1800) {
-    Action.async {
-      db.command(Distinct("parties", "grps")).map {
-        groups =>
-          Ok(views.html.index(groups.sorted, Location(-2, 53)))
-      }
+  def index = Action.async {
+    db.command(Distinct("parties", "grps")).map {
+      groups =>
+        Ok(views.html.index(groups.sorted, Location(-2, 53)))
     }
   }
 

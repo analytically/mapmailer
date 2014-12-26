@@ -1,7 +1,7 @@
 mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.svg?branch=master)](https://travis-ci.org/analytically/mapmailer)
 =========
 
-Email CRM contacts by drawing an area on a map (UK). Built using [Play Framework 2.2](http://www.playframework.org) (Scala).
+Email CRM contacts by drawing an area on a map (UK). Built using [Play Framework 2.3](http://www.playframework.org) (Scala).
 Follow [@analytically](http://twitter.com/analytically) for updates. Check the video [here](https://www.youtube.com/watch?v=KkWUCm6CSBM)!
 
 ![screenshot](screenshot.png)
@@ -16,7 +16,7 @@ Works with:
 
 #### Building (optional)
 
-Requires [Play Framework 2.2](http://www.playframework.com/).
+Requires [Play Framework 2.3](http://www.playframework.com/).
 
 ```
 play assembly
@@ -54,7 +54,7 @@ Use a custom field to have a direct link from your contact to the map. In Capsul
 
 #### Technology
 
-* [Play Framework 2.2](http://www.playframework.org) with [Scala](http://www.scala-lang.org/)
+* [Play Framework 2.3](http://www.playframework.org) with [Scala](http://www.scala-lang.org/)
 * [Apache Camel](http://camel.apache.org) to [process and monitor](https://github.com/analytically/mapmailer/blob/master/app/Global.scala#L34) the `codepointopen` directory and to tell the actors about the postcodes
 * [Akka](http://akka.io) provides a nice concurrency model [to process the 1.7 million postcodes](https://github.com/analytically/mapmailer/blob/master/app/actors/actors.scala#L41) in under one minute on modern hardware
 * [MongoDB](http://www.mongodb.org) as database with two-dimensional geospatial indexes (see [Geospatial Indexing](http://www.mongodb.org/display/DOCS/Geospatial+Indexing))
@@ -85,7 +85,7 @@ to market teachers to schools efficiently. Parts of this project are based on [C
 
 Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-Copyright 2014 [Mathias Bogaert](mailto:mathias.bogaert@gmail.com).
+Copyright 2014-2015 [Mathias Bogaert](mailto:mathias.bogaert@gmail.com).
 
 This data contains Ordnance Survey data &copy; Crown copyright and database right 2013. Code-Point Open contains
 Royal Mail data &copy; Royal Mail copyright and database right 2012. Code-Point Open and ONSPD contains National Statistics
