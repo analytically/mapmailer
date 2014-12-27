@@ -2,13 +2,14 @@ mapmailer [![Build Status](https://travis-ci.org/analytically/mapmailer.svg?bran
 =========
 
 Email CRM contacts by drawing an area on a map (UK). Built using [Play Framework 2.3](http://www.playframework.org) (Scala).
-Follow [@analytically](http://twitter.com/analytically) for updates. Check the video [here](https://www.youtube.com/watch?v=KkWUCm6CSBM)!
+Follow [@analytically](http://twitter.com/analytically) for updates. Usage video available [here](https://www.youtube.com/watch?v=KkWUCm6CSBM)!
 
 ![screenshot](screenshot.png)
 ![screenshot2](screenshot2.png)
 
 Works with:
   - [Capsule CRM](http://www.capsulecrm.com/)
+  - Coming soon: Salesforce
 
 #### Requirements
 
