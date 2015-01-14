@@ -121,18 +121,15 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
   }
 
   def importParty(pcuCollection: BSONCollection, partyCollection: BSONCollection, party: CParty, tags: CTags): Future[Either[String, Future[LastError]]] = {
-    val groupsToIgnore = Play.current.configuration.getStringList("groups.ignore").get
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    val groups = (if (tags.size > 0) tags.tags.map(_.name) else Nil ++
+    val groups = ((if (tags.size > 0) tags.tags.map(_.name).toList else Nil) ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
       .distinct
-      .diff(groupsToIgnore)
       .map(_.capitalize)
       .padTo(1, "No groups")
-      .toList
 
     party.firstAddress().zip.filter(_ != ',').toUpperCase.split(' ') match {
       case Array(outward, inward) => {
