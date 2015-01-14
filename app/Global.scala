@@ -100,7 +100,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       case Success(parties) =>
         for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
           party.listTags().onComplete {
-            case Success(tags) if tags.size > 0 && !tags.tags.map(_.name).exists(skipImport.toSet) =>
+            case Success(tags) if tags.size == 0 || !tags.tags.map(_.name).exists(skipImport.toSet) =>
               importParty(pcuCollection, partyCollection, party, tags) onComplete {
                 case Success(result) => result match {
                   case Right(insertResult) => insertResult.onComplete {
@@ -111,7 +111,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
                 }
                 case Failure(t) => Logger.error(t.getMessage, t)
               }
-            case Success(tags) => Logger.debug(s"Skipping import of $party")
+            case Success(tags) => Logger.debug(s"Skipping import of ${party.getName}, tags: ${tags.map(_.name).mkString(", ")}")
             case Failure(t) => Logger.error(t.getMessage, t)
           }
         }
@@ -124,7 +124,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
     val groupsToIgnore = Play.current.configuration.getStringList("groups.ignore").get
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    val groups = (tags.tags.map(_.name) ++
+    val groups = (if (tags.size > 0) tags.tags.map(_.name) else Nil ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
@@ -134,7 +134,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       .padTo(1, "No groups")
       .toList
 
-    party.firstAddress().zip.toUpperCase.split(' ') match {
+    party.firstAddress().zip.filter(_ != ',').toUpperCase.split(' ') match {
       case Array(outward, inward) => {
         pcuCollection.find(BSONDocument("outward" -> outward.trim, "inward" -> inward.trim)).one[PostcodeUnit].map {
           case Some(postcodeUnit) =>
@@ -172,8 +172,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
         }
       }
       case _ => {
-        Logger.error(s"No space in ZIP code for $party")
-        Future.failed(new Exception)
+        Future.successful(Left(s"Unable to import ${party.getName}, postcode doesn't contain a space: ${party.firstAddress().zip}"))
       }
     }
   }
