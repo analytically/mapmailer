@@ -21,7 +21,7 @@ import reactivemongo.bson.BSONDocument
 import reactivemongo.core.commands.LastError
 import scala.collection.JavaConversions._
 import scala.concurrent._
-import scala.Some
+import scala.util.control.NonFatal
 import scala.util.{Success, Failure, Try}
 import uk.co.coen.capsulecrm.client._
 import play.api.Play.current
@@ -33,7 +33,7 @@ import scala.concurrent.duration._
 object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
   val camelContext = new DefaultCamelContext()
 
-  implicit def javaFutureToScalaFuture[T](javaFuture: java.util.concurrent.Future[T]) = {
+  implicit def javaFutureToScalaFuture[T](javaFuture: java.util.concurrent.Future[T]): Future[T] = {
     val p = promise[T]()
 
     Futures.addCallback(JdkFutureAdapters.listenInPoolThread(javaFuture), new FutureCallback[T]() {
@@ -52,30 +52,35 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       override def configure() {
         from(app.configuration.getString("cpo.from").get).unmarshal.bindy(BindyType.Csv, "models.csv").split(body).process(new Processor {
           override def process(exchange: Exchange) {
-            val csvEntryMap = mapAsScalaMap[String, CodePointOpenCsvEntry](exchange.getIn.getBody.asInstanceOf[java.util.Map[String, CodePointOpenCsvEntry]])
+            try {
+              val csvEntryMap = mapAsScalaMap[String, CodePointOpenCsvEntry](exchange.getIn.getBody.asInstanceOf[java.util.Map[String, CodePointOpenCsvEntry]])
 
-            for (entry <- csvEntryMap.values) {
-              processActor ! entry
+              for (entry <- csvEntryMap.values) {
+                processActor ! entry
+              }
+            }
+            catch {
+              case NonFatal(e) => Logger.error(s"Error processing CSV: ${e.getMessage}", e)
             }
           }
         })
       }
     })
 
+    val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
+    val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
+
+    pcuCollection.indexesManager.ensure(Index(Seq("outward" -> Ascending, "inward" -> Ascending), unique = true))
+
+    partyCollection.indexesManager.ensure(Index(Seq("pid" -> Ascending)))
+    partyCollection.indexesManager.ensure(Index(Seq("loc" -> Geo2D)))
+    partyCollection.indexesManager.ensure(Index(Seq("grps" -> Ascending)))
+
     try {
       camelContext.start()
     } catch {
       case e: FailedToStartRouteException => Logger.warn(e.getMessage)
     }
-
-    val pcuCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("pcu")
-    val partyCollection: BSONCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
-
-    pcuCollection.indexesManager.ensure(Index(Seq("pc" -> Ascending), background = true, unique = true))
-
-    partyCollection.indexesManager.ensure(Index(Seq("pid" -> Ascending), background = true))
-    partyCollection.indexesManager.ensure(Index(Seq("loc" -> Geo2D), background = true))
-    partyCollection.indexesManager.ensure(Index(Seq("grps" -> Ascending), background = true))
 
     app.configuration.getString("capsulecrm.url") match {
       case Some(url) if !Play.isTest =>
@@ -104,7 +109,7 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
                   }
                   case Left(message) => Logger.warn(message)
                 }
-                case Failure(t) => Logger.error(t.getMessage)
+                case Failure(t) => Logger.error(t.getMessage, t)
               }
             case Success(tags) => Logger.debug(s"Skipping import of $party")
             case Failure(t) => Logger.error(t.getMessage, t)
@@ -129,37 +134,47 @@ object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
       .padTo(1, "No groups")
       .toList
 
-    pcuCollection.find(BSONDocument("pc" -> CharMatcher.WHITESPACE.removeFrom(party.firstAddress().zip).toUpperCase)).one[PostcodeUnit].map {
-      case Some(postcodeUnit) =>
-        Right(partyCollection.find(BSONDocument("pid" -> party.id.toString)).one[Party].flatMap {
-          case Some(existingParty) =>
-            partyCollection.remove(existingParty).flatMap { _ =>
-                partyCollection.insert(existingParty.copy(
+    party.firstAddress().zip.toUpperCase.split(' ') match {
+      case Array(outward, inward) => {
+        pcuCollection.find(BSONDocument("outward" -> outward.trim, "inward" -> inward.trim)).one[PostcodeUnit].map {
+          case Some(postcodeUnit) =>
+            Right(partyCollection.find(BSONDocument("pid" -> party.id.toString)).one[Party].flatMap {
+              case Some(existingParty) =>
+                partyCollection.remove(existingParty).flatMap { _ =>
+                  partyCollection.insert(existingParty.copy(
+                    party.id.toString,
+                    party.getName,
+                    party.firstEmail().emailAddress,
+                    if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
+                    outward,
+                    inward,
+                    party.isInstanceOf[COrganisation],
+                    postcodeUnit.location,
+                    groups
+                  ))
+                }
+
+              case None =>
+                partyCollection.insert(Party(
                   party.id.toString,
                   party.getName,
                   party.firstEmail().emailAddress,
                   if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-                  party.firstAddress().zip.toUpperCase,
+                  outward,
+                  inward,
                   party.isInstanceOf[COrganisation],
                   postcodeUnit.location,
                   groups
                 ))
-            }
+            })
 
-          case None =>
-            partyCollection.insert(Party(
-              party.id.toString,
-              party.getName,
-              party.firstEmail().emailAddress,
-              if (party.firstWebsite(WebService.URL) != null) Some(party.firstWebsite(WebService.URL).webAddress) else None,
-              party.firstAddress().zip.toUpperCase,
-              party.isInstanceOf[COrganisation],
-              postcodeUnit.location,
-              groups
-            ))
-        })
-
-      case None => Left(s"Unable to find location for party ${party.getName} with postcode ${party.firstAddress().zip}")
+          case None => Left(s"Unable to find location for party ${party.getName} with postcode $outward / $inward (${party.firstAddress().zip})")
+        }
+      }
+      case _ => {
+        Logger.error(s"No space in ZIP code for $party")
+        Future.failed(new Exception)
+      }
     }
   }
 

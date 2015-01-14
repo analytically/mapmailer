@@ -1,6 +1,5 @@
 package models.csv
 
-import scala.Predef.String
 import org.apache.camel.dataformat.bindy.annotation.{DataField, CsvRecord}
 import scala.beans.BeanInfo
 import scala.annotation.meta.field

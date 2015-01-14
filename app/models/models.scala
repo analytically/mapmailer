@@ -11,18 +11,22 @@ case class Party(@Key("pid") partyId: String,
                  @Key("n") name: String,
                  @Key("em") emailAddress: String,
                  @Key("ws") website: Option[String],
-                 @Key("pc") postcode: String,
+                 @Key("outward") outward: String,
+                 @Key("inward") inward: String,
                  @Key("org") organisation: Boolean,
                  @Key("loc") location: Location,
                  @Key("grps") groups: List[String],
-                 _id: BSONObjectID = BSONObjectID.generate)
+                 _id: BSONObjectID = BSONObjectID.generate) {
+  val postcode = outward + ' ' + inward
+}
 
 object Party {
   implicit val locationHandler = Macros.handler[Location]
   implicit val partyHandler = Macros.handler[Party]
 }
 
-case class PostcodeUnit(@Key("pc") postcode: String,
+case class PostcodeUnit(@Key("outward") outward: String,
+                        @Key("inward") inward: String,
                         @Key("loc") location: Location,
                         _id: BSONObjectID = BSONObjectID.generate)
 
