@@ -1,6 +1,3 @@
-import com.google.common.util.concurrent.Futures
-import java.util.concurrent
-import models.Location
 import models.{Location, Party}
 import org.specs2.mutable._
 import org.specs2.runner._
@@ -13,12 +10,9 @@ import play.api.test.Helpers._
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import reactivemongo.api.collections.default.BSONCollection
-import reactivemongo.api.collections.default.BSONCollection
 import reactivemongo.bson.BSONDocument
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.Some
-import uk.co.coen.capsulecrm.client._
 import scala.collection.JavaConversions._
 
 @RunWith(classOf[JUnitRunner])
@@ -104,7 +98,7 @@ class ApplicationSpec extends Specification with NoTimeConversions {
 
       val partyCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
       Await.result(partyCollection.insert(new Party("12345678", "Some School", "mathias.bogaert@gmail.com", Some("http://www.coen.co.uk/"), "DY10", "4PW",
-        organisation = true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
+        true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
 
       val inclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
         """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
