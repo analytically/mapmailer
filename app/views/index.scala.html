@@ -1,10 +1,10 @@
 @(groups: List[String], center: models.Location)
 @main("MapMailer") {
-<script type="text/javascript" language="javascript" src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+<script type="text/javascript" language="javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/purl.js")"></script>
 
 <script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
-<script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
+<script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/swag.js")"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/selectize.js")"></script>
 
@@ -235,7 +235,7 @@
                 createMarkerAndAddToLayer(party).setIcon(focusIcon).addTo(map).openPopup();
             }).fail(function () { alert("Can't find contact with id " + $.url().param('partyId')) });
         }
-    });
+    })
 </script>
 
 <script id="person-popup" type="text/x-handlebars-template">
@@ -245,7 +245,7 @@
 </script>
 
 <script id="organisation-popup" type="text/x-handlebars-template">
-    <strong><span title="{{ join groups ', '}} - {{ postcode }}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
+    <strong><span title="{{ join groups ', '}} - {{ outward }} {{ inward }}">{{ name }}</span></strong>&nbsp;&nbsp;&nbsp;
     <a href="@play.Play.application().configuration().getString("crm.url").stripSuffix("/")/{{ partyId }}" title="Open in CRM" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-gear fa-lg"></i></a>
     <a href="mailto:{{ emailAddress }}?bcc=@play.Play.application().configuration().getString("crm.bcc")" title="Email {{ emailAddress }}" target="_blank" class="btn btn-default btn-xs"><i class="fa fa-envelope-o fa-lg"></i></a>
     <a href="{{startWith 'http://' website }}" target="_blank" title="Open {{stripPrefix 'http://' website }}" class="btn btn-default btn-xs"><i class="fa fa-external-link fa-lg"></i></a>
