@@ -1,6 +1,6 @@
 name := "mapmailer"
 
-version := "1.0-SNAPSHOT"
+version := "1.0.0"
 
 resolvers += "Open Source Geospatial Foundation Repository" at "http://download.osgeo.org/webdav/geotools/"
 
@@ -11,13 +11,15 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "com.google.code.findbugs" % "jsr305" % "2.0.3" // see http://stackoverflow.com/questions/10007994/why-do-i-need-jsr305-to-use-guava-in-scala
 
-libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.3.2" from "http://repo.typesafe.com/typesafe/releases/com/typesafe/play/play-iteratees_2.10/2.2.2/play-iteratees_2.10-2.2.2.jar"
+libraryDependencies += "com.typesafe.play" %% "play-iteratees" % "2.3.7" from "http://repo.typesafe.com/typesafe/releases/com/typesafe/play/play-iteratees_2.10/2.3.7/play-iteratees_2.10-2.3.7.jar"
 
 libraryDependencies += "org.reactivemongo" %% "play2-reactivemongo" % "0.10.5.0.akka23" excludeAll ExclusionRule(organization = "org.apache.logging.log4j")
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4" // reactivemongo depends on scala-compiler
 
-libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.0-rc1"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.1"
+
+libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.1"
 
 libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "[1.3,)"
 
