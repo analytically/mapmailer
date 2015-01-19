@@ -104,7 +104,7 @@ class ApplicationSpec extends Specification with NoTimeConversions {
 
       val partyCollection = ReactiveMongoPlugin.db.collection[BSONCollection]("parties")
       Await.result(partyCollection.insert(Party("12345678", "Some School", "mathias.bogaert@gmail.com", Some("http://www.coen.co.uk/"), "DY10", "4PW",
-        true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
+        organisation = true, Location(-2.18494136, 52.3621734), List("Institution", "Independent"))), 10 seconds)
 
       val inclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
         """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.1533203125,52.382305628707854],"radius":19643.358128558553}}"""
@@ -113,7 +113,8 @@ class ApplicationSpec extends Specification with NoTimeConversions {
       status(inclusiveRequest) must equalTo(OK)
       contentType(inclusiveRequest) must beSome.which(_ == "application/json")
       contentAsString(inclusiveRequest) must contain("Some School")
-      contentAsString(inclusiveRequest) must contain("DY10 4PW")
+      contentAsString(inclusiveRequest) must contain("DY10")
+      contentAsString(inclusiveRequest) must contain("4PW")
 
       val exclusiveRequest = route(FakeRequest.apply(POST, "/party/search").withJsonBody(Json.parse(
         """{"type":"Feature","properties":{},"geometry":{"type":"Circle","coordinates":[-2.2533203125,52.882305628707854],"radius":19643.358128558553}}"""
