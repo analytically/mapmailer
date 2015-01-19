@@ -33,8 +33,6 @@ libraryDependencies += "org.geotools" % "gt-main" % "10.5" excludeAll ExclusionR
 
 libraryDependencies += "org.geotools" % "gt-epsg-hsql" % "10.5" excludeAll ExclusionRule(organization = "javax.media")
 
-libraryDependencies += "net.sourceforge.htmlunit" % "htmlunit" % "2.15" % "test"
-
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 libraryDependencies ~= { _ map {
