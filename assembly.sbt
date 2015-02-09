@@ -10,3 +10,5 @@ assemblyMergeStrategy in assembly <<= (mergeStrategy in assembly) { (wrapped) =>
 }
 
 mainClass in assembly := Some("play.core.server.NettyServer")
+
+fullClasspath in assembly += Attributed.blank(PlayKeys.playPackageAssets.value)
