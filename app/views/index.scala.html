@@ -3,7 +3,7 @@
 <script type="text/javascript" language="javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/purl.js")"></script>
 
-<script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" language="javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/swag.js")"></script>
 <script type="text/javascript" language="javascript" src="@routes.Assets.at("javascripts/selectize.js")"></script>
@@ -80,11 +80,11 @@
             center: new L.LatLng(@center.latitude, @center.longitude),
             zoom: 7,
             layers: [mapTiles]
-        });
+        })
 
         var overlays = {
             @for(group <- groups) { "@(group)":group@(group.replaceAll("[^a-zA-Z0-9]", "")), }
-        };
+        }
         L.control.layers({}, overlays).addTo(map);
 
         var popupOptions = {maxWidth: 460};
@@ -131,7 +131,7 @@
                     allowIntersection: false,
                     drawError: {
                         color: '#e1e100',
-                        message: '<strong>Nein!<strong> You can\'t draw an intersecting polygon.'
+                        message: 'You can\'t draw an intersecting polygon.'
                     },
                     shapeOptions: {
                         color: '#2F4F4F'
@@ -187,7 +187,7 @@
                     });
 
                     var partyGroupFilter = function(party) {
-                        return party.groups.some(function(group) {
+                        return party.groups.some(function(group, index, array) {
                             return map.hasLayer(window['group' + group.replace(/\W/g, '')]);
                         });
                     };
