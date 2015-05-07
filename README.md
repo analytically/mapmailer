@@ -39,7 +39,7 @@ files to the `codepointopen` directory in the same directory with the downloaded
 
 Start the application:
 
-```
+```shell
 java -Dcapsulecrm.url=https://example.capsulecrm.com -Dcapsulecrm.token=abcdef123456789 -jar mapmailer.jar
 ```
 
@@ -81,6 +81,14 @@ CRM:
 This software was built for [Coen Recruitment](http://www.coen.co.uk/), an education recruitment agency in the UK. Since
 they prioritise on location and endeavour to find teachers work close to home, their consultants need map area selection
 to market teachers to schools efficiently. Parts of this project are based on [CamelCode](https://github.com/analytically/camelcode).
+
+#### Security
+
+To enable basic authentication, specify the `auth.username` and `auth.password` properties:
+
+```shell
+java -Dauth.username=mycompany -Dauth.password=abc123 ... -jar mapmailer.jar
+```
 
 #### License
 

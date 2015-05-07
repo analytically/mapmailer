@@ -30,7 +30,7 @@ import scala.util.control.Exception._
 import play.modules.reactivemongo.json.BSONFormats._
 import scala.concurrent.duration._
 
-object Global extends WithFilters(new GzipFilter()) with GlobalSettings {
+object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with GlobalSettings {
   val camelContext = new DefaultCamelContext()
 
   implicit def javaFutureToScalaFuture[T](javaFuture: java.util.concurrent.Future[T]): Future[T] = {
