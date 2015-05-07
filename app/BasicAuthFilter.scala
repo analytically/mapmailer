@@ -5,13 +5,11 @@ import play.api.mvc._
 import scala.concurrent.Future
 
 object BasicAuthFilter extends Filter {
-  private lazy val unauthResult = Results.Unauthorized.withHeaders(("WWW-Authenticate", "Basic realm=\"mapmailer\""))
-  private lazy val passwordRequired = !Play.current.configuration.getString("auth.username").getOrElse("").isEmpty
+  private lazy val username = Play.current.configuration.getString("auth.username")
+  private lazy val password = Play.current.configuration.getString("auth.password")
 
-  private lazy val username = Play.current.configuration.getString("auth.username").get
-  private lazy val password = Play.current.configuration.getString("auth.password").get
-
-  private lazy val basicSt = "basic "
+  private val unauthResult = Results.Unauthorized.withHeaders(("WWW-Authenticate", "Basic realm=\"mapmailer\""))
+  private val basicSt = "basic "
 
   private def getUserIPAddress(request: RequestHeader): String = {
     request.headers.get("x-forwarded-for").getOrElse(request.remoteAddress.toString)
@@ -38,21 +36,21 @@ object BasicAuthFilter extends Filter {
 
     val usernamePassword = decodedAuthSt.split(":")
     if (usernamePassword.length >= 2) {
-      //account for ":" in passwords
+      // account for ":" in passwords
       return Some(usernamePassword(0), usernamePassword.splitAt(1)._2.mkString)
     }
     None
   }
 
   def apply(nextFilter: (RequestHeader) => Future[Result])(requestHeader: RequestHeader): Future[Result] = {
-    if (!passwordRequired) {
+    if (username.isEmpty || password.isEmpty) {
       return nextFilter(requestHeader)
     }
 
     requestHeader.headers.get("authorization").map { basicAuth =>
       decodeBasicAuth(basicAuth) match {
         case Some((user, pass)) =>
-          if (username == user && password == pass) {
+          if (username.get == user && password.get == pass) {
             return nextFilter(requestHeader)
           }
 
