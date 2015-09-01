@@ -76,7 +76,7 @@ CRM:
   [Async Http Client](https://github.com/AsyncHttpClient/async-http-client), [Google Guava](https://code.google.com/p/guava-libraries/),
   [XStream](http://xstream.codehaus.org/) and [Joda-Time](http://www.joda.org/joda-time/).
 
-#### Background and usecase
+#### Background and use case
 
 This software was built for [Coen Recruitment](http://www.coen.co.uk/), an education recruitment agency in the UK. Since
 they prioritise on location and endeavour to find teachers work close to home, their consultants need map area selection
