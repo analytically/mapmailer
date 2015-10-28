@@ -1,6 +1,6 @@
 name := "mapmailer"
 
-version := "1.0.2"
+version := "1.0.3"
 
 resolvers += "Open Source Geospatial Foundation Repository" at "http://download.osgeo.org/webdav/geotools/"
 
