@@ -1,0 +1,25 @@
+{
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "eu-west-1",
+    "source_ami": "ami-971238f1",
+    "instance_type": "t2.large",
+    "ebs_optimized": true,
+    "enhanced_networking": true,
+    "ssh_username": "ubuntu",
+    "ami_name": "packer-mapmailer-{{timestamp}}"
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "inline": [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
+      "sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6",
+      "echo \"deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.4 multiverse\" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.4.list",
+      "sudo apt-get update -y",
+      "sudo apt-get upgrade -y",
+      "sudo apt-get install htop jq git default-jre unzip mongodb-org -y",
+      "curl -sSOL https://github.com/analytically/mapmailer/releases/download/1.0.4/mapmailer.jar",
+      "mkdir codepointopen && cd codepointopen && curl -sSOL https://s3-eu-west-1.amazonaws.com/codepointopen/codepointopen.zip && unzip codepointopen.zip && cd .."
+    ]
+  }]
+}
