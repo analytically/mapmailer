@@ -21,7 +21,7 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.1"
 
 libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.1"
 
-libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "[1.3,)"
+libraryDependencies += "uk.co.coen" % "capsulecrm-java" % "1.3.4"
 
 libraryDependencies += "org.apache.camel" % "camel-core" % "2.13.0"
 

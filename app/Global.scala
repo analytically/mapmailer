@@ -99,31 +99,29 @@ object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with Global
     partiesFuture.onComplete {
       case Success(parties) =>
         for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
-          party.listTags().onComplete {
-            case Success(tags) if tags.size == 0 || !tags.tags.map(_.name).exists(skipImport.toSet) =>
-              importParty(pcuCollection, partyCollection, party, tags) onComplete {
-                case Success(result) => result match {
-                  case Right(insertResult) => insertResult.onComplete {
-                    case Failure(e) => Logger.error(e.getMessage, e)
-                    case Success(_) =>
-                  }
-                  case Left(message) => Logger.warn(message)
+          if (party.tags.size == 0 || !party.tags.map(_.name).exists(skipImport.toSet)) {
+            importParty(pcuCollection, partyCollection, party) onComplete {
+              case Success(result) => result match {
+                case Right(insertResult) => insertResult.onComplete {
+                  case Failure(e) => Logger.error(e.getMessage, e)
+                  case Success(_) =>
                 }
-                case Failure(t) => Logger.error(t.getMessage, t)
+                case Left(message) => Logger.warn(message)
               }
-            case Success(tags) => Logger.debug(s"Skipping import of ${party.getName}, tags: ${tags.map(_.name).mkString(", ")}")
-            case Failure(t) => Logger.error(t.getMessage, t)
+              case Failure(t) => Logger.error(t.getMessage, t)
+            }
           }
+          else Logger.debug(s"Skipping import of ${party.getName}, tags: ${party.tags.map(_.name).mkString(", ")}")
         }
       case Failure(t) => Logger.error(t.getMessage, t)
       case _ =>
     }
   }
 
-  def importParty(pcuCollection: BSONCollection, partyCollection: BSONCollection, party: CParty, tags: CTags): Future[Either[String, Future[LastError]]] = {
+  def importParty(pcuCollection: BSONCollection, partyCollection: BSONCollection, party: CParty): Future[Either[String, Future[LastError]]] = {
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    val groups = ((if (tags.size > 0) tags.tags.map(_.name).toList else Nil) ++
+    val groups = ((if (party.tags.nonEmpty) party.tags.map(_.name) else Nil) ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
@@ -147,7 +145,7 @@ object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with Global
                     inward,
                     party.isInstanceOf[COrganisation],
                     postcodeUnit.location,
-                    groups
+                    groups.toList
                   ))
                 }
 
@@ -161,7 +159,7 @@ object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with Global
                   inward,
                   party.isInstanceOf[COrganisation],
                   postcodeUnit.location,
-                  groups
+                  groups.toList
                 ))
             })
 
