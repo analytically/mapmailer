@@ -99,7 +99,7 @@ object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with Global
     partiesFuture.onComplete {
       case Success(parties) =>
         for (party <- parties if party.firstEmail() != null && party.firstAddress() != null && party.firstAddress().zip != null) {
-          if (party.tags.size == 0 || !party.tags.map(_.name).exists(skipImport.toSet)) {
+          if (party.tags == null || party.tags.size == 0 || !party.tags.map(_.name).exists(skipImport.toSet)) {
             importParty(pcuCollection, partyCollection, party) onComplete {
               case Success(result) => result match {
                 case Right(insertResult) => insertResult.onComplete {
@@ -121,7 +121,7 @@ object Global extends WithFilters(new GzipFilter(), BasicAuthFilter) with Global
   def importParty(pcuCollection: BSONCollection, partyCollection: BSONCollection, party: CParty): Future[Either[String, Future[LastError]]] = {
     val groupsToCollapseIfContains = Play.current.configuration.getStringList("groups.collapseIfContains").get
 
-    val groups = ((if (party.tags.nonEmpty) party.tags.map(_.name) else Nil) ++
+    val groups = ((if (party.tags != null && party.tags.nonEmpty) party.tags.map(_.name) else Nil) ++
       (if (party.isInstanceOf[COrganisation]) Nil else Try(Splitter.on(CharMatcher.anyOf(",&")).trimResults().omitEmptyStrings().split(party.asInstanceOf[CPerson].jobTitle).toList).getOrElse(Nil)))
       .map(group => allCatch.opt(groupsToCollapseIfContains.filter(group.toLowerCase.contains(_)).maxBy(_.length)).getOrElse(group).trim)
       .filter(_.length > 1)
